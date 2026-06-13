@@ -258,9 +258,8 @@ const generateReportText = () => {
 
   return `📋 *LAPORAN REKAP PENJUALAN PM FRIED CHICKEN*
 
-    📅 Hari/Tanggal : ${document.getElementById("hari").value}, ${
-    document.getElementById("tanggal").value
-  }
+📅 Hari/Tanggal : ${document.getElementById("hari").value}, ${
+    document.getElementById("tanggal").value}
 ⏰ Jam : ${document.getElementById("jam").value}
 👤 Kasir : ${kasir}
 ━━━━━━━━━━━━━━
