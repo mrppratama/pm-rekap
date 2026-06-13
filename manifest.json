@@ -1,0 +1,22 @@
+{
+  "name": "PM Fried Chicken Rekap",
+  "short_name": "PM Rekap",
+  "description": "Aplikasi rekap penjualan harian kasir PM Fried Chicken Kendayakan",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f6f9",
+  "theme_color": "#D62828",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "Maskot PM.jpg",
+      "sizes": "192x192",
+      "type": "image/jpeg"
+    },
+    {
+      "src": "Maskot PM.jpg",
+      "sizes": "512x512",
+      "type": "image/jpeg"
+    }
+  ]
+}
