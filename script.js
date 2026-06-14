@@ -75,7 +75,6 @@ const loadHistory = () => {
     };
 };
 
-// Toggle Buka/Tutup Text Laporan
 window.viewHistoryText = (id) => {
     const container = document.getElementById(`historyTextContainer-${id}`);
     const btn = document.getElementById(`btn-toggle-${id}`);
@@ -83,13 +82,11 @@ window.viewHistoryText = (id) => {
     const btnSave = document.getElementById(`btnSaveEdit-${id}`);
 
     if(!container.classList.contains('hidden')) {
-        // Tutup
         container.classList.add('hidden');
         btn.innerHTML = '<i class="fas fa-file-alt"></i> Lihat Laporan Detail';
         textarea.setAttribute('readonly', true);
         btnSave.classList.add('hidden');
     } else {
-        // Buka
         const transaction = db.transaction(["reports"], "readonly");
         const request = transaction.objectStore("reports").get(id);
         request.onsuccess = function() {
@@ -100,7 +97,6 @@ window.viewHistoryText = (id) => {
     }
 };
 
-// Fitur Edit
 window.editHistory = (id) => {
     const container = document.getElementById(`historyTextContainer-${id}`);
     const textarea = document.getElementById(`editText-${id}`);
@@ -108,7 +104,7 @@ window.editHistory = (id) => {
     const btnToggle = document.getElementById(`btn-toggle-${id}`);
 
     if(container.classList.contains('hidden')) {
-        viewHistoryText(id); // Buka dulu jika tertutup
+        viewHistoryText(id); 
     }
     
     setTimeout(() => {
@@ -131,12 +127,11 @@ window.saveEdit = (id) => {
         const updateReq = store.put(data);
         updateReq.onsuccess = () => {
             showToast('Perubahan berhasil disimpan');
-            viewHistoryText(id); // Tutup panel setelah simpan
+            viewHistoryText(id); 
         };
     };
 };
 
-// Fitur Hapus
 window.deleteHistory = (id) => {
     if(confirm('Data akan dihapus permanen dari HP. Lanjutkan?')) {
         const transaction = db.transaction(["reports"], "readwrite");
@@ -229,7 +224,6 @@ const calculateAll = () => {
     document.getElementById('saldoAkhir').textContent = formatRupiah(saldoAkhir);
 };
 
-// --- LOGIKA VALIDASI TAMBAH BARIS PEMASUKAN & PENGELUARAN ---
 document.getElementById('btnAddIncome').addEventListener('click', () => {
     const existingItems = incomeList.querySelectorAll('.income-item');
     for (let item of existingItems) {
@@ -284,7 +278,7 @@ const validateForm = () => {
     return true;
 };
 
-// FORMAT TEKS LAPORAN (DISESUAIKAN DENGAN TEMPLATE)
+// FORMAT TEKS LAPORAN (SESUAI REQUEST TERAKHIR)
 const generateReportText = () => {
     const kasir = kasirInput.value || '-';
     const jualFc = parseInt(document.getElementById('jualFc').value) || 0;
@@ -373,7 +367,7 @@ Total Pengeluaran : Rp${formatNumStr(totalExp)}
 Total Penjualan : Rp${formatNumStr(totalPenjualan)}
 Total Pemasukan Lainnya : Rp${formatNumStr(totalInc)}
 Total Pengeluaran : Rp${formatNumStr(totalExp)}
-Saldo Akhir : Rp${formatNumStr(totalPenjualan + totalInc - totalExp)}
+Saldo Akhir : Rp${formatNumStr((totalPenjualan + totalInc) - totalExp)}
 ━━━━━━━━━━━━━━
 
 
@@ -433,7 +427,6 @@ let deferredPrompt;
 window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferredPrompt = e;
-    // Munculkan tombol jika didukung
     document.getElementById('btnInstall').classList.remove('hidden'); 
 });
 
