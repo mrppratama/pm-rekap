@@ -1,11 +1,11 @@
-const CACHE_NAME = "pm-rekap-v12";
+const CACHE_NAME = "pm-rekap-v14";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
   "/style.css",
   "/script.js",
   "/manifest.json",
-  "/Maskot%20PM.jpg",
+  "/Maskot%20PM.png",
   "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css",
 ];
 
