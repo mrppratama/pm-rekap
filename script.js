@@ -5,6 +5,8 @@ const HARGA = { fc: 10000, geprek: 13000, nasi: 3000 };
 const inputs = document.querySelectorAll(".calc-input");
 const expenseList = document.getElementById("expenseList");
 const btnAddExpense = document.getElementById("btnAddExpense");
+const incomeList = document.getElementById("incomeList");
+const btnAddIncome = document.getElementById("btnAddIncome");
 const themeIcon = document.getElementById("themeIcon");
 const kasirInput = document.getElementById("kasir");
 
@@ -28,7 +30,7 @@ const parseCurrency = (str) => {
   return parseInt(str.replace(/[^0-9]/g, "")) || 0;
 };
 
-// Utility: Format Input Pengeluaran (Rp. + Titik)
+// Utility: Format Input Pengeluaran & Pemasukan (Rp. + Titik)
 const formatCurrencyInput = (e) => {
   let val = e.target.value.replace(/[^0-9]/g, "");
   if (val === "") {
@@ -56,18 +58,11 @@ const setupDateTime = () => {
 
     // Update Hari & Tanggal
     document.getElementById("hari").value = days[now.getDay()];
-    const tanggalFormat = `${now.getDate().toString().padStart(2, "0")}/${(
-      now.getMonth() + 1
-    )
-      .toString()
-      .padStart(2, "0")}/${now.getFullYear()}`;
+    const tanggalFormat = `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()}`;
     document.getElementById("tanggal").value = tanggalFormat;
 
     // Update Jam (Format 24 Jam)
-    const jamFormat = `${now.getHours().toString().padStart(2, "0")}:${now
-      .getMinutes()
-      .toString()
-      .padStart(2, "0")}`;
+    const jamFormat = `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
     document.getElementById("jam").value = jamFormat;
   };
 
@@ -136,6 +131,17 @@ const calculateAll = () => {
   document.getElementById("akhirNasi").style.color =
     akhirNasi < 0 ? "var(--red)" : "";
 
+  // Hitung Pemasukan Lainnya
+  let totalPemasukan = 0;
+  document.querySelectorAll(".income-amount").forEach((input) => {
+    totalPemasukan += parseCurrency(input.value);
+  });
+
+  document.getElementById("totalPemasukan").textContent =
+    formatRupiah(totalPemasukan);
+  document.getElementById("sumPemasukan").textContent =
+    formatRupiah(totalPemasukan);
+
   // Hitung Pengeluaran
   let totalPengeluaran = 0;
   document.querySelectorAll(".expense-amount").forEach((input) => {
@@ -147,12 +153,33 @@ const calculateAll = () => {
   document.getElementById("sumPengeluaran").textContent =
     formatRupiah(totalPengeluaran);
 
-  // Saldo Akhir
-  const saldoAkhir = totalPenjualan - totalPengeluaran;
+  // Saldo Akhir (Penjualan + Pemasukan - Pengeluaran)
+  const saldoAkhir = totalPenjualan + totalPemasukan - totalPengeluaran;
   document.getElementById("saldoAkhir").textContent = formatRupiah(saldoAkhir);
 };
 
-// Fitur Pengeluaran
+// Fitur Pemasukan Dinamis
+btnAddIncome.addEventListener("click", () => {
+  const id = Date.now();
+  const html = `
+        <div class="income-item" id="inc-${id}">
+            <input type="text" class="income-desc" placeholder="Keterangan">
+            <input type="text" class="income-amount" placeholder="Rp. 0">
+            <button type="button" class="btn-danger" onclick="removeIncome('${id}')"><i class="fas fa-trash"></i></button>
+        </div>
+    `;
+  incomeList.insertAdjacentHTML("beforeend", html);
+
+  const newInput = document.querySelector(`#inc-${id} .income-amount`);
+  newInput.addEventListener("input", formatCurrencyInput);
+});
+
+window.removeIncome = (id) => {
+  document.getElementById(`inc-${id}`).remove();
+  calculateAll();
+};
+
+// Fitur Pengeluaran Dinamis
 btnAddExpense.addEventListener("click", () => {
   const id = Date.now();
   const html = `
@@ -218,7 +245,7 @@ const validateForm = () => {
     const el = document.getElementById(id);
     if (el.value === "") {
       alert(
-        "⚠️ GAGAL MENGIRIM!\nPastikan semua form Stok dan Penjualan sudah terisi. Jika tidak ada, isi dengan angka 0."
+        "⚠️ GAGAL MENGIRIM!\nPastikan semua form Stok dan Penjualan sudah terisi. Jika tidak ada, isi dengan angka 0.",
       );
       el.focus();
       return false;
@@ -234,7 +261,28 @@ const generateReportText = () => {
   const jualFc = parseInt(document.getElementById("jualFc").value) || 0;
   const jualGeprek = parseInt(document.getElementById("jualGeprek").value) || 0;
   const jualNasi = parseInt(document.getElementById("jualNasi").value) || 0;
+  const totalPenjualan =
+    jualFc * HARGA.fc + jualGeprek * HARGA.geprek + jualNasi * HARGA.nasi;
 
+  // List Pemasukan
+  let daftarPemasukan = "";
+  let totalInc = 0;
+  const incItems = document.querySelectorAll(".income-item");
+  if (incItems.length === 0) {
+    daftarPemasukan = "Tidak ada pemasukan lain\n";
+  } else {
+    incItems.forEach((item) => {
+      const desc =
+        item.querySelector(".income-desc").value || "Tanpa keterangan";
+      const amount = parseCurrency(item.querySelector(".income-amount").value);
+      if (amount > 0) {
+        daftarPemasukan += `• ${desc} : Rp${new Intl.NumberFormat("id-ID").format(amount)}\n`;
+        totalInc += amount;
+      }
+    });
+  }
+
+  // List Pengeluaran
   let daftarPengeluaran = "";
   let totalExp = 0;
   const expItems = document.querySelectorAll(".expense-item");
@@ -246,9 +294,7 @@ const generateReportText = () => {
         item.querySelector(".expense-desc").value || "Tanpa keterangan";
       const amount = parseCurrency(item.querySelector(".expense-amount").value);
       if (amount > 0) {
-        daftarPengeluaran += `• ${desc} : Rp${new Intl.NumberFormat(
-          "id-ID"
-        ).format(amount)}\n`;
+        daftarPengeluaran += `• ${desc} : Rp${new Intl.NumberFormat("id-ID").format(amount)}\n`;
         totalExp += amount;
       }
     });
@@ -258,8 +304,7 @@ const generateReportText = () => {
 
   return `📋 *LAPORAN REKAP PENJUALAN PM FRIED CHICKEN*
 
-📅 Hari/Tanggal : ${document.getElementById("hari").value}, ${
-    document.getElementById("tanggal").value}
+📅 Hari/Tanggal : ${document.getElementById("hari").value}, ${document.getElementById("tanggal").value}
 ⏰ Jam : ${document.getElementById("jam").value}
 👤 Kasir : ${kasir}
 ━━━━━━━━━━━━━━
@@ -292,25 +337,21 @@ Subtotal : Rp${formatNumStr(jualNasi * HARGA.nasi)}
 Fried Chicken : Rp${formatNumStr(jualFc * HARGA.fc)}
 Ayam Geprek : Rp${formatNumStr(jualGeprek * HARGA.geprek)}
 Nasi : Rp${formatNumStr(jualNasi * HARGA.nasi)}
-Total Penjualan : Rp${formatNumStr(
-    jualFc * HARGA.fc + jualGeprek * HARGA.geprek + jualNasi * HARGA.nasi
-  )}
+Total Penjualan : Rp${formatNumStr(totalPenjualan)}
+━━━━━━━━━━━━━━
+💵 PEMASUKAN LAINNYA
+${daftarPemasukan.trim()}
+Total Pemasukan : Rp${formatNumStr(totalInc)}
 ━━━━━━━━━━━━━━
 💸 PENGELUARAN
 ${daftarPengeluaran.trim()}
 Total Pengeluaran : Rp${formatNumStr(totalExp)}
 ━━━━━━━━━━━━━━
 📊 REKAP AKHIR
-Total Penjualan : Rp${formatNumStr(
-    jualFc * HARGA.fc + jualGeprek * HARGA.geprek + jualNasi * HARGA.nasi
-  )}
+Total Penjualan : Rp${formatNumStr(totalPenjualan)}
+Total Pemasukan : Rp${formatNumStr(totalInc)}
 Total Pengeluaran : Rp${formatNumStr(totalExp)}
-Saldo Akhir : Rp${formatNumStr(
-    jualFc * HARGA.fc +
-      jualGeprek * HARGA.geprek +
-      jualNasi * HARGA.nasi -
-      totalExp
-  )}
+Saldo Akhir : Rp${formatNumStr(totalPenjualan + totalInc - totalExp)}
 ━━━━━━━━━━━━━━
 
 
@@ -363,6 +404,7 @@ document.getElementById("btnReset").addEventListener("click", () => {
       .forEach((input) => (input.value = 0));
     kasirInput.value = "";
     expenseList.innerHTML = "";
+    incomeList.innerHTML = "";
     calculateAll();
     showToast("Form berhasil di-reset");
   }
