@@ -170,7 +170,7 @@ input:focus, select:focus {
     border-radius: 8px;
     overflow: hidden;
     background-color: var(--bg-color);
-    width: 140px; /* Lebar optimal untuk tombol & angka */
+    width: 140px;
 }
 
 .qty-control input {
@@ -179,9 +179,10 @@ input:focus, select:focus {
     text-align: center;
     font-weight: bold;
     width: 100%;
-    min-width: 50px; /* GARANSI ANGKA TIDAK AKAN HILANG DI HP */
+    min-width: 50px; 
     padding: 10px 2px;
     background: transparent;
+  
 }
 
 .qty-control input::-webkit-outer-spin-button, 
@@ -203,7 +204,7 @@ input:focus, select:focus {
 
 .btn-qty:hover { background: var(--yellow); color: var(--white); }
 
-/* Sales List - Mobile First Design */
+/* Sales List */
 .sales-list { display: flex; flex-direction: column; gap: 15px; }
 
 .sales-item {
@@ -232,8 +233,8 @@ input:focus, select:focus {
 
 .sales-subtotal { text-align: right; font-weight: bold; font-size: 1.1rem; }
 
-/* Expense List - Mobile First */
-.expense-item {
+/* Income & Expense Lists */
+.expense-item, .income-item {
     display: flex;
     flex-wrap: wrap;
     gap: 10px;
@@ -242,19 +243,19 @@ input:focus, select:focus {
     border-bottom: 1px dashed var(--border-color);
 }
 
-.expense-desc { flex: 1 1 100%; }
-.expense-amount { flex: 1; }
-.expense-item .btn-danger { flex: 0 0 auto; }
+.expense-desc, .income-desc { flex: 1 1 100%; }
+.expense-amount, .income-amount { flex: 1; }
+.expense-item .btn-danger, .income-item .btn-danger { flex: 0 0 auto; }
 
 @media (min-width: 768px) {
-    .expense-item { flex-wrap: nowrap; padding-bottom: 0; border-bottom: none; }
-    .expense-desc { flex: 2; }
-    .expense-amount { flex: 1.5; }
+    .expense-item, .income-item { flex-wrap: nowrap; padding-bottom: 0; border-bottom: none; }
+    .expense-desc, .income-desc { flex: 2; }
+    .expense-amount, .income-amount { flex: 1.5; }
 }
 
 /* Totals */
 .total-bar { display: flex; justify-content: space-between; align-items: center; padding-top: 15px; font-size: 1.1rem; }
-.total-bar strong { font-size: 1.3rem; color: var(--red); }
+.total-bar strong { font-size: 1.3rem; }
 
 /* Summary */
 .summary-grid { display: flex; flex-direction: column; gap: 10px; }
@@ -289,6 +290,9 @@ input:focus, select:focus {
 
 .btn-primary { background-color: var(--green); color: var(--white); }
 .btn-primary:hover { background-color: #218838; }
+
+.btn-green { background-color: var(--green); color: var(--white); }
+.btn-green:hover { background-color: #218838; }
 
 .btn-secondary { background-color: var(--yellow); color: var(--text-main); }
 .btn-secondary:hover { background-color: var(--yellow-hover); }
