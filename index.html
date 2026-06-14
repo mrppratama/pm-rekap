@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
   <head>
     <meta charset="UTF-8" />
@@ -51,22 +51,21 @@
             <input type="text" id="tanggal" readonly class="readonly-input" />
           </div>
           <div class="form-group">
-            <label>Jam</label>
-            <input type="text" id="jam" readonly class="readonly-input" />
-          </div>
-          <div class="form-group">
             <label for="kasir"
               >Nama Kasir <span class="text-red">*</span></label
             >
             <input
               type="text"
               id="kasir"
-              placeholder="(Masukkan Nama Kasir)"
+              placeholder="Masukkan Nama Kasir"
               required
               autocomplete="off"
             />
           </div>
-          
+          <div class="form-group">
+            <label>Jam</label>
+            <input type="text" id="jam" readonly class="readonly-input" />
+          </div>
         </div>
       </section>
 
@@ -225,6 +224,20 @@
 
       <section class="card">
         <div class="header-between">
+          <h2><i class="fas fa-hand-holding-usd"></i> Pemasukan Lain</h2>
+          <button type="button" id="btnAddIncome" class="btn-small btn-green">
+            <i class="fas fa-plus"></i> Tambah
+          </button>
+        </div>
+        <div id="incomeList"></div>
+        <div class="total-bar">
+          <span>Total Pemasukan Lain</span>
+          <strong id="totalPemasukan" class="text-green">Rp0</strong>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="header-between">
           <h2><i class="fas fa-receipt"></i> Pengeluaran</h2>
           <button type="button" id="btnAddExpense" class="btn-small btn-yellow">
             <i class="fas fa-plus"></i> Tambah
@@ -233,7 +246,7 @@
         <div id="expenseList"></div>
         <div class="total-bar expense-bar">
           <span>Total Pengeluaran</span>
-          <strong id="totalPengeluaran">Rp0</strong>
+          <strong id="totalPengeluaran" class="text-red">Rp0</strong>
         </div>
       </section>
 
@@ -242,7 +255,11 @@
         <div class="summary-grid">
           <div class="summary-item">
             <span>Total Penjualan</span>
-            <strong id="sumPenjualan" class="text-green">Rp0</strong>
+            <strong id="sumPenjualan">Rp0</strong>
+          </div>
+          <div class="summary-item">
+            <span>Total Pemasukan Lain</span>
+            <strong id="sumPemasukan" class="text-green">Rp0</strong>
           </div>
           <div class="summary-item">
             <span>Total Pengeluaran</span>
