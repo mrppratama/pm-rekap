@@ -1,242 +1,329 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PM Fried Chicken - Rekap Penjualan</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#D62828">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#D62828" />
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
     <div id="loading" class="loading-overlay hidden">
-        <div class="spinner"></div>
+      <div class="spinner"></div>
     </div>
 
     <div id="toast" class="toast hidden"></div>
 
     <header class="app-header">
-        <div class="header-content">
-            <div class="logo-container">
-                <img src="Maskot PM.png" alt="Logo PM Fried Chicken" class="logo-img">
-            </div>
-            <div class="header-text">
-                <h1>PM Fried Chicken Kendayakan</h1>
-                <p>Sistem Rekap Penjualan Harian</p>
-            </div>
+      <div class="header-content">
+        <div class="logo-container">
+          <!-- Nama file gambar sudah diubah menjadi logo.png -->
+          <img src="logoPM.png" alt="Logo PM Fried Chicken" class="logo-img" />
         </div>
-        <div class="header-actions">
-            <button id="btnInstall" class="btn-icon hidden" title="Install Aplikasi ke HP">
-                <i class="fas fa-download"></i>
-            </button>
-            <button id="darkModeToggle" class="btn-icon" title="Ganti Tema">
-                <i class="fas fa-moon" id="themeIcon"></i>
-            </button>
+        <div class="header-text">
+          <h1>PM Fried Chicken Kendayakan</h1>
+          <p>Sistem Rekap Penjualan Harian</p>
         </div>
+      </div>
+      <div class="header-actions">
+        <button
+          id="btnInstall"
+          class="btn-icon hidden"
+          title="Install Aplikasi ke HP"
+        >
+          <i class="fas fa-download"></i>
+        </button>
+        <button id="darkModeToggle" class="btn-icon" title="Ganti Tema">
+          <i class="fas fa-moon" id="themeIcon"></i>
+        </button>
+      </div>
     </header>
 
     <main class="container">
-        <div class="top-action-bar">
-            <button id="btnRiwayat" class="btn btn-secondary btn-small"><i class="fas fa-database"></i> Riwayat Database</button>
-        </div>
+      <div class="top-action-bar">
+        <button id="btnRiwayat" class="btn btn-secondary btn-small">
+          <i class="fas fa-database"></i> Riwayat Database
+        </button>
+      </div>
 
-        <section class="card">
-            <h2><i class="fas fa-info-circle"></i> Informasi Umum</h2>
+      <section class="card">
+        <h2><i class="fas fa-info-circle"></i> Informasi Umum</h2>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>Hari</label>
+            <input type="text" id="hari" readonly class="readonly-input" />
+          </div>
+          <div class="form-group">
+            <label>Tanggal</label>
+            <input type="text" id="tanggal" readonly class="readonly-input" />
+          </div>
+          <div class="form-group">
+            <label for="kasir"
+              >Nama Kasir <span class="text-red">*</span></label
+            >
+            <input
+              type="text"
+              id="kasir"
+              placeholder="Masukkan Nama Kasir"
+              required
+              autocomplete="off"
+            />
+          </div>
+          <div class="form-group">
+            <label>Jam</label>
+            <input type="text" id="jam" readonly class="readonly-input" />
+          </div>
+        </div>
+      </section>
+
+      <div class="grid-2-desktop">
+        <div class="col-left">
+          <section class="card">
+            <h2><i class="fas fa-box-open"></i> Stok Awal</h2>
             <div class="grid-2">
-                <div class="form-group">
-                    <label>Hari</label>
-                    <input type="text" id="hari" readonly class="readonly-input">
+              <div class="form-group">
+                <label
+                  >Fried Chicken (pcs) <span class="text-red">*</span></label
+                >
+                <div class="qty-control">
+                  <button type="button" class="btn-qty minus">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <input
+                    type="number"
+                    id="awalFc"
+                    class="calc-input"
+                    min="0"
+                    value="0"
+                    required
+                  />
+                  <button type="button" class="btn-qty plus">
+                    <i class="fas fa-plus"></i>
+                  </button>
                 </div>
-                <div class="form-group">
-                    <label>Tanggal</label>
-                    <input type="text" id="tanggal" readonly class="readonly-input">
+              </div>
+              <div class="form-group">
+                <label>Nasi (porsi) <span class="text-red">*</span></label>
+                <div class="qty-control">
+                  <button type="button" class="btn-qty minus">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <input
+                    type="number"
+                    id="awalNasi"
+                    class="calc-input"
+                    min="0"
+                    value="0"
+                    required
+                  />
+                  <button type="button" class="btn-qty plus">
+                    <i class="fas fa-plus"></i>
+                  </button>
                 </div>
-                <div class="form-group">
-                    <label for="kasir">Nama Kasir <span class="text-red">*</span></label>
-                    <input type="text" id="kasir" placeholder="Hanya huruf (contoh: Budi)" required autocomplete="off">
-                </div>
-                <div class="form-group">
-                    <label>Jam</label>
-                    <input type="text" id="jam" readonly class="readonly-input">
-                </div>
+              </div>
             </div>
-        </section>
+          </section>
 
-        <div class="grid-2-desktop">
-            <div class="col-left">
-                <section class="card">
-                    <h2><i class="fas fa-box-open"></i> Stok Awal</h2>
-                    <div class="grid-2">
-                        <div class="form-group">
-                            <label>Fried Chicken (pcs) <span class="text-red">*</span></label>
-                            <div class="qty-control">
-                                <button type="button" class="btn-qty minus"><i class="fas fa-minus"></i></button>
-                                <input type="number" id="awalFc" class="calc-input" min="0" value="0" required>
-                                <button type="button" class="btn-qty plus"><i class="fas fa-plus"></i></button>
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <label>Nasi (porsi) <span class="text-red">*</span></label>
-                            <div class="qty-control">
-                                <button type="button" class="btn-qty minus"><i class="fas fa-minus"></i></button>
-                                <input type="number" id="awalNasi" class="calc-input" min="0" value="0" required>
-                                <button type="button" class="btn-qty plus"><i class="fas fa-plus"></i></button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="card highlight-card">
-                    <h2><i class="fas fa-boxes"></i> Stok Akhir</h2>
-                    <div class="grid-2">
-                        <div class="stat-box">
-                            <span>Fried Chicken</span>
-                            <h3 id="akhirFc">0</h3>
-                        </div>
-                        <div class="stat-box">
-                            <span>Nasi</span>
-                            <h3 id="akhirNasi">0</h3>
-                        </div>
-                    </div>
-                </section>
+          <section class="card highlight-card">
+            <h2><i class="fas fa-boxes"></i> Stok Akhir</h2>
+            <div class="grid-2">
+              <div class="stat-box">
+                <span>Fried Chicken</span>
+                <h3 id="akhirFc">0</h3>
+              </div>
+              <div class="stat-box">
+                <span>Nasi</span>
+                <h3 id="akhirNasi">0</h3>
+              </div>
             </div>
-
-            <div class="col-right">
-                <section class="card">
-                    <h2><i class="fas fa-shopping-cart"></i> Penjualan Hari Ini</h2>
-                    <div class="sales-list">
-                        <div class="sales-item">
-                            <div class="sales-info">
-                                <strong>Fried Chicken</strong>
-                                <span>@ Rp10.000</span>
-                            </div>
-                            <div class="sales-controls">
-                                <div class="qty-control">
-                                    <button type="button" class="btn-qty minus"><i class="fas fa-minus"></i></button>
-                                    <input type="number" id="jualFc" class="calc-input" min="0" value="0" required>
-                                    <button type="button" class="btn-qty plus"><i class="fas fa-plus"></i></button>
-                                </div>
-                                <div class="sales-subtotal" id="subFc">Rp0</div>
-                            </div>
-                        </div>
-
-                        <div class="sales-item">
-                            <div class="sales-info">
-                                <strong>Ayam Geprek</strong>
-                                <span>@ Rp13.000</span>
-                            </div>
-                            <div class="sales-controls">
-                                <div class="qty-control">
-                                    <button type="button" class="btn-qty minus"><i class="fas fa-minus"></i></button>
-                                    <input type="number" id="jualGeprek" class="calc-input" min="0" value="0" required>
-                                    <button type="button" class="btn-qty plus"><i class="fas fa-plus"></i></button>
-                                </div>
-                                <div class="sales-subtotal" id="subGeprek">Rp0</div>
-                            </div>
-                        </div>
-
-                        <div class="sales-item">
-                            <div class="sales-info">
-                                <strong>Nasi</strong>
-                                <span>@ Rp3.000</span>
-                            </div>
-                            <div class="sales-controls">
-                                <div class="qty-control">
-                                    <button type="button" class="btn-qty minus"><i class="fas fa-minus"></i></button>
-                                    <input type="number" id="jualNasi" class="calc-input" min="0" value="0" required>
-                                    <button type="button" class="btn-qty plus"><i class="fas fa-plus"></i></button>
-                                </div>
-                                <div class="sales-subtotal" id="subNasi">Rp0</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="total-bar">
-                        <span>Total Penjualan</span>
-                        <strong id="totalPenjualan">Rp0</strong>
-                    </div>
-                </section>
-            </div>
+          </section>
         </div>
 
-        <section class="card">
-            <div class="header-between">
-                <h2><i class="fas fa-hand-holding-usd"></i> Pemasukan Lainnya</h2>
-                <button type="button" id="btnAddIncome" class="btn-small btn-green">
-                    <i class="fas fa-plus"></i> Tambah
-                </button>
+        <div class="col-right">
+          <section class="card">
+            <h2><i class="fas fa-shopping-cart"></i> Penjualan Hari Ini</h2>
+            <div class="sales-list">
+              <div class="sales-item">
+                <div class="sales-info">
+                  <strong>Fried Chicken</strong>
+                  <span>@ Rp10.000</span>
+                </div>
+                <div class="sales-controls">
+                  <div class="qty-control">
+                    <button type="button" class="btn-qty minus">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <input
+                      type="number"
+                      id="jualFc"
+                      class="calc-input"
+                      min="0"
+                      value="0"
+                      required
+                    />
+                    <button type="button" class="btn-qty plus">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                  <div class="sales-subtotal" id="subFc">Rp0</div>
+                </div>
+              </div>
+
+              <div class="sales-item">
+                <div class="sales-info">
+                  <strong>Ayam Geprek</strong>
+                  <span>@ Rp13.000</span>
+                </div>
+                <div class="sales-controls">
+                  <div class="qty-control">
+                    <button type="button" class="btn-qty minus">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <input
+                      type="number"
+                      id="jualGeprek"
+                      class="calc-input"
+                      min="0"
+                      value="0"
+                      required
+                    />
+                    <button type="button" class="btn-qty plus">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                  <div class="sales-subtotal" id="subGeprek">Rp0</div>
+                </div>
+              </div>
+
+              <div class="sales-item">
+                <div class="sales-info">
+                  <strong>Nasi</strong>
+                  <span>@ Rp3.000</span>
+                </div>
+                <div class="sales-controls">
+                  <div class="qty-control">
+                    <button type="button" class="btn-qty minus">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <input
+                      type="number"
+                      id="jualNasi"
+                      class="calc-input"
+                      min="0"
+                      value="0"
+                      required
+                    />
+                    <button type="button" class="btn-qty plus">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                  <div class="sales-subtotal" id="subNasi">Rp0</div>
+                </div>
+              </div>
             </div>
-            <div id="incomeList"></div>
             <div class="total-bar">
-                <span>Total Pemasukan Lainnya</span>
-                <strong id="totalPemasukan" class="text-green">Rp0</strong>
+              <span>Total Penjualan</span>
+              <strong id="totalPenjualan">Rp0</strong>
             </div>
-        </section>
-
-        <section class="card">
-            <div class="header-between">
-                <h2><i class="fas fa-receipt"></i> Pengeluaran</h2>
-                <button type="button" id="btnAddExpense" class="btn-small btn-yellow">
-                    <i class="fas fa-plus"></i> Tambah
-                </button>
-            </div>
-            <div id="expenseList"></div>
-            <div class="total-bar expense-bar">
-                <span>Total Pengeluaran</span>
-                <strong id="totalPengeluaran" class="text-red">Rp0</strong>
-            </div>
-        </section>
-
-        <section class="card summary-card">
-            <h2><i class="fas fa-chart-pie"></i> Rekap Akhir</h2>
-            <div class="summary-grid">
-                <div class="summary-item">
-                    <span>Total Penjualan</span>
-                    <strong id="sumPenjualan">Rp0</strong>
-                </div>
-                <div class="summary-item">
-                    <span>Total Pemasukan Lainnya</span>
-                    <strong id="sumPemasukan" class="text-green">Rp0</strong>
-                </div>
-                <div class="summary-item">
-                    <span>Total Pengeluaran</span>
-                    <strong id="sumPengeluaran" class="text-red">Rp0</strong>
-                </div>
-                <div class="summary-item final">
-                    <span>Saldo Akhir</span>
-                    <strong id="saldoAkhir">Rp0</strong>
-                </div>
-            </div>
-        </section>
-
-        <div class="action-buttons">
-            <button id="btnReset" class="btn btn-outline"><i class="fas fa-undo"></i> Reset</button>
-            <button id="btnPreview" class="btn btn-secondary"><i class="fas fa-eye"></i> Preview</button>
-            <button id="btnKirim" class="btn btn-primary btn-large"><i class="fab fa-whatsapp"></i> Simpan & Kirim WA</button>
+          </section>
         </div>
+      </div>
+
+      <section class="card">
+        <div class="header-between">
+          <h2><i class="fas fa-hand-holding-usd"></i> Pemasukan Lainnya</h2>
+          <button type="button" id="btnAddIncome" class="btn-small btn-green">
+            <i class="fas fa-plus"></i> Tambah
+          </button>
+        </div>
+        <div id="incomeList"></div>
+        <div class="total-bar">
+          <span>Total Pemasukan Lainnya</span>
+          <strong id="totalPemasukan" class="text-green">Rp0</strong>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="header-between">
+          <h2><i class="fas fa-receipt"></i> Pengeluaran</h2>
+          <button type="button" id="btnAddExpense" class="btn-small btn-yellow">
+            <i class="fas fa-plus"></i> Tambah
+          </button>
+        </div>
+        <div id="expenseList"></div>
+        <div class="total-bar expense-bar">
+          <span>Total Pengeluaran</span>
+          <strong id="totalPengeluaran" class="text-red">Rp0</strong>
+        </div>
+      </section>
+
+      <section class="card summary-card">
+        <h2><i class="fas fa-chart-pie"></i> Rekap Akhir</h2>
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span>Total Penjualan</span>
+            <strong id="sumPenjualan">Rp0</strong>
+          </div>
+          <div class="summary-item">
+            <span>Total Pemasukan Lainnya</span>
+            <strong id="sumPemasukan" class="text-green">Rp0</strong>
+          </div>
+          <div class="summary-item">
+            <span>Total Pengeluaran</span>
+            <strong id="sumPengeluaran" class="text-red">Rp0</strong>
+          </div>
+          <div class="summary-item final">
+            <span>Saldo Akhir</span>
+            <strong id="saldoAkhir">Rp0</strong>
+          </div>
+        </div>
+      </section>
+
+      <div class="action-buttons">
+        <button id="btnReset" class="btn btn-outline">
+          <i class="fas fa-undo"></i> Reset
+        </button>
+        <button id="btnPreview" class="btn btn-secondary">
+          <i class="fas fa-eye"></i> Preview
+        </button>
+        <button id="btnKirim" class="btn btn-primary btn-large">
+          <i class="fab fa-whatsapp"></i> Simpan & Kirim WA
+        </button>
+      </div>
     </main>
 
     <div id="previewModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-modal" onclick="closeModal('previewModal')">&times;</span>
-            <h2>Preview Laporan</h2>
-            <pre id="previewText"></pre>
-            <div class="modal-actions">
-                <button id="btnKirimModal" class="btn btn-primary btn-full"><i class="fab fa-whatsapp"></i> Kirim Sekarang</button>
-            </div>
+      <div class="modal-content">
+        <span class="close-modal" onclick="closeModal('previewModal')"
+          >&times;</span
+        >
+        <h2>Preview Laporan</h2>
+        <pre id="previewText"></pre>
+        <div class="modal-actions">
+          <button id="btnKirimModal" class="btn btn-primary btn-full">
+            <i class="fab fa-whatsapp"></i> Kirim Sekarang
+          </button>
         </div>
+      </div>
     </div>
 
     <div id="riwayatModal" class="modal hidden">
-        <div class="modal-content" style="max-width: 600px;">
-            <span class="close-modal" onclick="closeModal('riwayatModal')">&times;</span>
-            <h2><i class="fas fa-database"></i> Riwayat Database</h2>
-            <div id="historyContainer" class="history-container">
-                <p class="text-muted">Memuat data database...</p>
-            </div>
+      <div class="modal-content" style="max-width: 600px">
+        <span class="close-modal" onclick="closeModal('riwayatModal')"
+          >&times;</span
+        >
+        <h2><i class="fas fa-database"></i> Riwayat Database</h2>
+        <div id="historyContainer" class="history-container">
+          <p class="text-muted">Memuat data database...</p>
         </div>
+      </div>
     </div>
 
     <script src="script.js"></script>
-</body>
+  </body>
 </html>
