@@ -5,332 +5,326 @@ const HARGA = { fc: 10000, geprek: 13000, nasi: 3000 };
 let db;
 const request = indexedDB.open("PMRekapDB", 1);
 
-request.onupgradeneeded = function (event) {
-  db = event.target.result;
-  if (!db.objectStoreNames.contains("reports")) {
-    db.createObjectStore("reports", { keyPath: "id", autoIncrement: true });
-  }
+request.onupgradeneeded = function(event) {
+    db = event.target.result;
+    if (!db.objectStoreNames.contains("reports")) {
+        db.createObjectStore("reports", { keyPath: "id", autoIncrement: true });
+    }
 };
 
-request.onsuccess = function (event) {
-  db = event.target.result;
-};
-request.onerror = function (event) {
-  console.error("Database error:", event.target.errorCode);
-};
+request.onsuccess = function(event) { db = event.target.result; };
+request.onerror = function(event) { console.error("Database error:", event.target.errorCode); };
 
 const saveToDatabase = (reportText, kasir, totalPenjualan, totalSaldo) => {
-  if (!db) return;
-  const transaction = db.transaction(["reports"], "readwrite");
-  const store = transaction.objectStore("reports");
-  const data = {
-    tanggal: document.getElementById("tanggal").value,
-    jam: document.getElementById("jam").value,
-    kasir: kasir,
-    penjualan: totalPenjualan,
-    saldoAkhir: totalSaldo,
-    laporanLengkap: reportText,
-    timestamp: new Date().getTime(),
-  };
-  store.add(data);
+    if (!db) return;
+    const transaction = db.transaction(["reports"], "readwrite");
+    const store = transaction.objectStore("reports");
+    const data = {
+        tanggal: document.getElementById('tanggal').value,
+        jam: document.getElementById('jam').value,
+        kasir: kasir,
+        penjualan: totalPenjualan,
+        saldoAkhir: totalSaldo,
+        laporanLengkap: reportText,
+        timestamp: new Date().getTime()
+    };
+    store.add(data);
 };
 
+// --- LOGIKA RIWAYAT, EDIT, & HAPUS ---
 const loadHistory = () => {
-  if (!db) return;
-  const historyContainer = document.getElementById("historyContainer");
-  historyContainer.innerHTML =
-    '<div class="spinner" style="margin:auto;"></div>';
+    if (!db) return;
+    const historyContainer = document.getElementById('historyContainer');
+    historyContainer.innerHTML = '<div class="spinner" style="margin:auto;"></div>';
 
-  const transaction = db.transaction(["reports"], "readonly");
-  const store = transaction.objectStore("reports");
-  const request = store.getAll();
+    const transaction = db.transaction(["reports"], "readonly");
+    const store = transaction.objectStore("reports");
+    const request = store.getAll(); 
 
-  request.onsuccess = function () {
-    const data = request.result;
-    historyContainer.innerHTML = "";
-    if (data.length === 0) {
-      historyContainer.innerHTML =
-        '<p class="text-muted text-center">Belum ada riwayat laporan tersimpan di database perangkat ini.</p>';
-      return;
-    }
+    request.onsuccess = function() {
+        const data = request.result;
+        historyContainer.innerHTML = '';
+        if (data.length === 0) {
+            historyContainer.innerHTML = '<p class="text-muted text-center">Belum ada riwayat laporan tersimpan.</p>';
+            return;
+        }
 
-    data.sort((a, b) => b.timestamp - a.timestamp);
-    data.forEach((item) => {
-      const html = `
-                <div class="history-item">
+        data.sort((a, b) => b.timestamp - a.timestamp);
+        data.forEach(item => {
+            const html = `
+                <div class="history-item" id="hist-item-${item.id}">
                     <h4>${item.tanggal} <span style="font-size:0.8rem; color:var(--text-muted)">${item.jam}</span></h4>
                     <p><strong>Kasir:</strong> ${item.kasir}</p>
-                    <p><strong>Penjualan:</strong> Rp${new Intl.NumberFormat("id-ID").format(item.penjualan)}</p>
-                    <p><strong>Saldo Bersih:</strong> Rp${new Intl.NumberFormat("id-ID").format(item.saldoAkhir)}</p>
-                    <button class="btn-small btn-secondary" onclick="viewHistoryText(${item.id})" style="margin-top:10px; width:100%"><i class="fas fa-file-alt"></i> Lihat Laporan Detail</button>
-                    <pre id="historyText-${item.id}" class="hidden" style="margin-top:10px; background:var(--bg-color); padding:10px; border-radius:5px; font-size:0.8rem; white-space:pre-wrap;"></pre>
+                    <p><strong>Penjualan:</strong> Rp${new Intl.NumberFormat('id-ID').format(item.penjualan)}</p>
+                    <p><strong>Saldo Bersih:</strong> Rp${new Intl.NumberFormat('id-ID').format(item.saldoAkhir)}</p>
+                    
+                    <div class="history-actions">
+                        <button class="btn-small btn-secondary" id="btn-toggle-${item.id}" onclick="viewHistoryText(${item.id})" style="flex:1;"><i class="fas fa-file-alt"></i> Lihat Laporan Detail</button>
+                        <button class="btn-small btn-yellow" onclick="editHistory(${item.id})" title="Edit Laporan"><i class="fas fa-edit"></i></button>
+                        <button class="btn-small btn-danger" onclick="deleteHistory(${item.id})" title="Hapus Laporan"><i class="fas fa-trash"></i></button>
+                    </div>
+                    
+                    <div id="historyTextContainer-${item.id}" class="hidden" style="margin-top:10px;">
+                        <textarea id="editText-${item.id}" style="width:100%; height:200px; resize:vertical; font-family:monospace;" readonly></textarea>
+                        <button id="btnSaveEdit-${item.id}" class="btn-small btn-green hidden" onclick="saveEdit(${item.id})" style="margin-top:10px; width:100%;"><i class="fas fa-save"></i> Simpan Perubahan</button>
+                    </div>
                 </div>
             `;
-      historyContainer.insertAdjacentHTML("beforeend", html);
-    });
-  };
+            historyContainer.insertAdjacentHTML('beforeend', html);
+        });
+    };
 };
 
+// Toggle Buka/Tutup Text Laporan
 window.viewHistoryText = (id) => {
-  const preEl = document.getElementById(`historyText-${id}`);
-  if (!preEl.classList.contains("hidden")) {
-    preEl.classList.add("hidden");
-    return;
-  }
+    const container = document.getElementById(`historyTextContainer-${id}`);
+    const btn = document.getElementById(`btn-toggle-${id}`);
+    const textarea = document.getElementById(`editText-${id}`);
+    const btnSave = document.getElementById(`btnSaveEdit-${id}`);
 
-  const transaction = db.transaction(["reports"], "readonly");
-  const store = transaction.objectStore("reports");
-  const request = store.get(id);
-  request.onsuccess = function () {
-    preEl.textContent = request.result.laporanLengkap;
-    preEl.classList.remove("hidden");
-  };
+    if(!container.classList.contains('hidden')) {
+        // Tutup
+        container.classList.add('hidden');
+        btn.innerHTML = '<i class="fas fa-file-alt"></i> Lihat Laporan Detail';
+        textarea.setAttribute('readonly', true);
+        btnSave.classList.add('hidden');
+    } else {
+        // Buka
+        const transaction = db.transaction(["reports"], "readonly");
+        const request = transaction.objectStore("reports").get(id);
+        request.onsuccess = function() {
+            textarea.value = request.result.laporanLengkap;
+            container.classList.remove('hidden');
+            btn.innerHTML = '<i class="fas fa-times"></i> Tutup';
+        };
+    }
 };
+
+// Fitur Edit
+window.editHistory = (id) => {
+    const container = document.getElementById(`historyTextContainer-${id}`);
+    const textarea = document.getElementById(`editText-${id}`);
+    const btnSave = document.getElementById(`btnSaveEdit-${id}`);
+    const btnToggle = document.getElementById(`btn-toggle-${id}`);
+
+    if(container.classList.contains('hidden')) {
+        viewHistoryText(id); // Buka dulu jika tertutup
+    }
+    
+    setTimeout(() => {
+        textarea.removeAttribute('readonly');
+        textarea.focus();
+        btnSave.classList.remove('hidden');
+        btnToggle.innerHTML = '<i class="fas fa-times"></i> Batal Edit';
+    }, 100);
+};
+
+window.saveEdit = (id) => {
+    const newText = document.getElementById(`editText-${id}`).value;
+    const transaction = db.transaction(["reports"], "readwrite");
+    const store = transaction.objectStore("reports");
+    const request = store.get(id);
+    
+    request.onsuccess = function() {
+        const data = request.result;
+        data.laporanLengkap = newText;
+        const updateReq = store.put(data);
+        updateReq.onsuccess = () => {
+            showToast('Perubahan berhasil disimpan');
+            viewHistoryText(id); // Tutup panel setelah simpan
+        };
+    };
+};
+
+// Fitur Hapus
+window.deleteHistory = (id) => {
+    if(confirm('Data akan dihapus permanen dari HP. Lanjutkan?')) {
+        const transaction = db.transaction(["reports"], "readwrite");
+        transaction.objectStore("reports").delete(id);
+        transaction.oncomplete = () => {
+            showToast('Laporan dihapus');
+            loadHistory();
+        };
+    }
+};
+
 
 // --- DOM ELEMENTS & APP LOGIC ---
-const inputs = document.querySelectorAll(".calc-input");
-const expenseList = document.getElementById("expenseList");
-const incomeList = document.getElementById("incomeList");
-const kasirInput = document.getElementById("kasir");
+const inputs = document.querySelectorAll('.calc-input');
+const expenseList = document.getElementById('expenseList');
+const incomeList = document.getElementById('incomeList');
+const kasirInput = document.getElementById('kasir');
 
-// Filter Input Nama Kasir (Hanya Menerima Huruf)
-kasirInput.addEventListener("input", function () {
-  this.value = this.value.replace(/[^a-zA-Z\s]/g, "");
-});
+kasirInput.addEventListener('input', function() { this.value = this.value.replace(/[^a-zA-Z\s]/g, ''); });
 
-const formatRupiah = (angka) =>
-  new Intl.NumberFormat("id-ID", {
-    style: "currency",
-    currency: "IDR",
-    minimumFractionDigits: 0,
-  }).format(angka);
-const parseCurrency = (str) => {
-  if (!str) return 0;
-  return parseInt(str.replace(/[^0-9]/g, "")) || 0;
-};
+const formatRupiah = (angka) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(angka);
+const parseCurrency = (str) => { if (!str) return 0; return parseInt(str.replace(/[^0-9]/g, '')) || 0; };
 
 const formatCurrencyInput = (e) => {
-  let val = e.target.value.replace(/[^0-9]/g, "");
-  e.target.value =
-    val === "" ? "" : "Rp. " + new Intl.NumberFormat("id-ID").format(val);
-  calculateAll();
+    let val = e.target.value.replace(/[^0-9]/g, '');
+    e.target.value = val === '' ? '' : 'Rp. ' + new Intl.NumberFormat('id-ID').format(val);
+    calculateAll();
 };
 
 const validateNumberInput = (e) => {
-  if (e.target.value < 0 || e.target.value === "") e.target.value = 0;
-  calculateAll();
+    if (e.target.value < 0 || e.target.value === '') e.target.value = 0;
+    calculateAll();
 };
 
 const setupDateTime = () => {
-  const days = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
-  const updateTime = () => {
-    const now = new Date();
-    document.getElementById("hari").value = days[now.getDay()];
-    document.getElementById("tanggal").value =
-      `${now.getDate().toString().padStart(2, "0")}/${(now.getMonth() + 1).toString().padStart(2, "0")}/${now.getFullYear()}`;
-    document.getElementById("jam").value =
-      `${now.getHours().toString().padStart(2, "0")}:${now.getMinutes().toString().padStart(2, "0")}`;
-  };
-  updateTime();
-  setInterval(updateTime, 60000);
+    const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+    const updateTime = () => {
+        const now = new Date();
+        document.getElementById('hari').value = days[now.getDay()];
+        document.getElementById('tanggal').value = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth() + 1).toString().padStart(2, '0')}/${now.getFullYear()}`;
+        document.getElementById('jam').value = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+    };
+    updateTime();
+    setInterval(updateTime, 60000);
 };
 
 const setupQtyControls = () => {
-  document.querySelectorAll(".qty-control").forEach((ctrl) => {
-    if (ctrl.dataset.initialized) return;
-    const btnMinus = ctrl.querySelector(".minus"),
-      btnPlus = ctrl.querySelector(".plus"),
-      input = ctrl.querySelector("input");
-    btnMinus.addEventListener("click", () => {
-      let val = parseInt(input.value) || 0;
-      if (val > 0) {
-        input.value = val - 1;
-        calculateAll();
-      }
+    document.querySelectorAll('.qty-control').forEach(ctrl => {
+        if (ctrl.dataset.initialized) return;
+        const btnMinus = ctrl.querySelector('.minus'), btnPlus = ctrl.querySelector('.plus'), input = ctrl.querySelector('input');
+        btnMinus.addEventListener('click', () => { let val = parseInt(input.value) || 0; if (val > 0) { input.value = val - 1; calculateAll(); } });
+        btnPlus.addEventListener('click', () => { let val = parseInt(input.value) || 0; input.value = val + 1; calculateAll(); });
+        ctrl.dataset.initialized = 'true';
     });
-    btnPlus.addEventListener("click", () => {
-      let val = parseInt(input.value) || 0;
-      input.value = val + 1;
-      calculateAll();
-    });
-    ctrl.dataset.initialized = "true";
-  });
 };
 
 const calculateAll = () => {
-  const jualFc = parseInt(document.getElementById("jualFc").value) || 0;
-  const jualGeprek = parseInt(document.getElementById("jualGeprek").value) || 0;
-  const jualNasi = parseInt(document.getElementById("jualNasi").value) || 0;
-  const awalFc = parseInt(document.getElementById("awalFc").value) || 0;
-  const awalNasi = parseInt(document.getElementById("awalNasi").value) || 0;
+    const jualFc = parseInt(document.getElementById('jualFc').value) || 0;
+    const jualGeprek = parseInt(document.getElementById('jualGeprek').value) || 0;
+    const jualNasi = parseInt(document.getElementById('jualNasi').value) || 0;
+    const awalFc = parseInt(document.getElementById('awalFc').value) || 0;
+    const awalNasi = parseInt(document.getElementById('awalNasi').value) || 0;
 
-  const subFc = jualFc * HARGA.fc,
-    subGeprek = jualGeprek * HARGA.geprek,
-    subNasi = jualNasi * HARGA.nasi;
-  document.getElementById("subFc").textContent = formatRupiah(subFc);
-  document.getElementById("subGeprek").textContent = formatRupiah(subGeprek);
-  document.getElementById("subNasi").textContent = formatRupiah(subNasi);
+    const subFc = jualFc * HARGA.fc, subGeprek = jualGeprek * HARGA.geprek, subNasi = jualNasi * HARGA.nasi;
+    document.getElementById('subFc').textContent = formatRupiah(subFc);
+    document.getElementById('subGeprek').textContent = formatRupiah(subGeprek);
+    document.getElementById('subNasi').textContent = formatRupiah(subNasi);
 
-  const totalPenjualan = subFc + subGeprek + subNasi;
-  document.getElementById("totalPenjualan").textContent =
-    formatRupiah(totalPenjualan);
-  document.getElementById("sumPenjualan").textContent =
-    formatRupiah(totalPenjualan);
+    const totalPenjualan = subFc + subGeprek + subNasi;
+    document.getElementById('totalPenjualan').textContent = formatRupiah(totalPenjualan);
+    document.getElementById('sumPenjualan').textContent = formatRupiah(totalPenjualan);
 
-  const akhirFc = awalFc - (jualFc + jualGeprek),
-    akhirNasi = awalNasi - jualNasi;
-  document.getElementById("akhirFc").textContent = akhirFc;
-  document.getElementById("akhirNasi").textContent = akhirNasi;
-  document.getElementById("akhirFc").style.color =
-    akhirFc < 0 ? "var(--red)" : "";
-  document.getElementById("akhirNasi").style.color =
-    akhirNasi < 0 ? "var(--red)" : "";
+    const akhirFc = awalFc - (jualFc + jualGeprek), akhirNasi = awalNasi - jualNasi;
+    document.getElementById('akhirFc').textContent = akhirFc;
+    document.getElementById('akhirNasi').textContent = akhirNasi;
+    document.getElementById('akhirFc').style.color = akhirFc < 0 ? 'var(--red)' : '';
+    document.getElementById('akhirNasi').style.color = akhirNasi < 0 ? 'var(--red)' : '';
 
-  let totalPemasukan = 0;
-  document
-    .querySelectorAll(".income-amount")
-    .forEach((input) => (totalPemasukan += parseCurrency(input.value)));
-  document.getElementById("totalPemasukan").textContent =
-    formatRupiah(totalPemasukan);
-  document.getElementById("sumPemasukan").textContent =
-    formatRupiah(totalPemasukan);
+    let totalPemasukan = 0;
+    document.querySelectorAll('.income-amount').forEach(input => totalPemasukan += parseCurrency(input.value));
+    document.getElementById('totalPemasukan').textContent = formatRupiah(totalPemasukan);
+    document.getElementById('sumPemasukan').textContent = formatRupiah(totalPemasukan);
 
-  let totalPengeluaran = 0;
-  document
-    .querySelectorAll(".expense-amount")
-    .forEach((input) => (totalPengeluaran += parseCurrency(input.value)));
-  document.getElementById("totalPengeluaran").textContent =
-    formatRupiah(totalPengeluaran);
-  document.getElementById("sumPengeluaran").textContent =
-    formatRupiah(totalPengeluaran);
+    let totalPengeluaran = 0;
+    document.querySelectorAll('.expense-amount').forEach(input => totalPengeluaran += parseCurrency(input.value));
+    document.getElementById('totalPengeluaran').textContent = formatRupiah(totalPengeluaran);
+    document.getElementById('sumPengeluaran').textContent = formatRupiah(totalPengeluaran);
 
-  const saldoAkhir = totalPenjualan + totalPemasukan - totalPengeluaran;
-  document.getElementById("saldoAkhir").textContent = formatRupiah(saldoAkhir);
+    const saldoAkhir = (totalPenjualan + totalPemasukan) - totalPengeluaran;
+    document.getElementById('saldoAkhir').textContent = formatRupiah(saldoAkhir);
 };
 
 // --- LOGIKA VALIDASI TAMBAH BARIS PEMASUKAN & PENGELUARAN ---
-document.getElementById("btnAddIncome").addEventListener("click", () => {
-  // Pencegahan jika baris sebelumnya kosong
-  const existingItems = incomeList.querySelectorAll(".income-item");
-  for (let item of existingItems) {
-    const desc = item.querySelector(".income-desc").value.trim();
-    const amount = parseCurrency(item.querySelector(".income-amount").value);
-    if (!desc || amount <= 0) {
-      alert(
-        "⚠️ Harap lengkapi Keterangan dan Jumlah pada baris Pemasukan sebelumnya.",
-      );
-      item.querySelector(!desc ? ".income-desc" : ".income-amount").focus();
-      return;
+document.getElementById('btnAddIncome').addEventListener('click', () => {
+    const existingItems = incomeList.querySelectorAll('.income-item');
+    for (let item of existingItems) {
+        const desc = item.querySelector('.income-desc').value.trim();
+        const amount = parseCurrency(item.querySelector('.income-amount').value);
+        if (!desc || amount <= 0) {
+            alert('⚠️ Harap lengkapi Keterangan dan Jumlah pada baris Pemasukan sebelumnya.');
+            item.querySelector(!desc ? '.income-desc' : '.income-amount').focus();
+            return;
+        }
     }
-  }
 
-  const id = Date.now();
-  const html = `<div class="income-item" id="inc-${id}"><input type="text" class="income-desc" placeholder="Keterangan Pemasukan"><input type="text" class="income-amount" placeholder="Rp. 0"><button type="button" class="btn-danger" onclick="removeEl('inc-${id}')"><i class="fas fa-trash"></i></button></div>`;
-  incomeList.insertAdjacentHTML("beforeend", html);
-  document
-    .querySelector(`#inc-${id} .income-amount`)
-    .addEventListener("input", formatCurrencyInput);
+    const id = Date.now();
+    const html = `<div class="income-item" id="inc-${id}"><input type="text" class="income-desc" placeholder="Keterangan Pemasukan Lainnya"><input type="text" class="income-amount" placeholder="Rp. 0"><button type="button" class="btn-danger" onclick="removeEl('inc-${id}')"><i class="fas fa-trash"></i></button></div>`;
+    incomeList.insertAdjacentHTML('beforeend', html);
+    document.querySelector(`#inc-${id} .income-amount`).addEventListener('input', formatCurrencyInput);
 });
 
-document.getElementById("btnAddExpense").addEventListener("click", () => {
-  // Pencegahan jika baris sebelumnya kosong
-  const existingItems = expenseList.querySelectorAll(".expense-item");
-  for (let item of existingItems) {
-    const desc = item.querySelector(".expense-desc").value.trim();
-    const amount = parseCurrency(item.querySelector(".expense-amount").value);
-    if (!desc || amount <= 0) {
-      alert(
-        "⚠️ Harap lengkapi Keterangan dan Jumlah pada baris Pengeluaran sebelumnya.",
-      );
-      item.querySelector(!desc ? ".expense-desc" : ".expense-amount").focus();
-      return;
+document.getElementById('btnAddExpense').addEventListener('click', () => {
+    const existingItems = expenseList.querySelectorAll('.expense-item');
+    for (let item of existingItems) {
+        const desc = item.querySelector('.expense-desc').value.trim();
+        const amount = parseCurrency(item.querySelector('.expense-amount').value);
+        if (!desc || amount <= 0) {
+            alert('⚠️ Harap lengkapi Keterangan dan Jumlah pada baris Pengeluaran sebelumnya.');
+            item.querySelector(!desc ? '.expense-desc' : '.expense-amount').focus();
+            return;
+        }
     }
-  }
 
-  const id = Date.now();
-  const html = `<div class="expense-item" id="exp-${id}"><input type="text" class="expense-desc" placeholder="Keterangan Pengeluaran"><input type="text" class="expense-amount" placeholder="Rp. 0"><button type="button" class="btn-danger" onclick="removeEl('exp-${id}')"><i class="fas fa-trash"></i></button></div>`;
-  expenseList.insertAdjacentHTML("beforeend", html);
-  document
-    .querySelector(`#exp-${id} .expense-amount`)
-    .addEventListener("input", formatCurrencyInput);
+    const id = Date.now();
+    const html = `<div class="expense-item" id="exp-${id}"><input type="text" class="expense-desc" placeholder="Keterangan Pengeluaran"><input type="text" class="expense-amount" placeholder="Rp. 0"><button type="button" class="btn-danger" onclick="removeEl('exp-${id}')"><i class="fas fa-trash"></i></button></div>`;
+    expenseList.insertAdjacentHTML('beforeend', html);
+    document.querySelector(`#exp-${id} .expense-amount`).addEventListener('input', formatCurrencyInput);
 });
 
-window.removeEl = (id) => {
-  document.getElementById(id).remove();
-  calculateAll();
-};
-inputs.forEach((input) => input.addEventListener("input", validateNumberInput));
+window.removeEl = (id) => { document.getElementById(id).remove(); calculateAll(); };
+inputs.forEach(input => input.addEventListener('input', validateNumberInput));
 
 const showToast = (msg) => {
-  const toast = document.getElementById("toast");
-  toast.textContent = msg;
-  toast.classList.remove("hidden");
-  toast.classList.add("show");
-  setTimeout(() => {
-    toast.classList.remove("show");
-    setTimeout(() => toast.classList.add("hidden"), 300);
-  }, 3000);
+    const toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.remove('hidden'); toast.classList.add('show');
+    setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.classList.add('hidden'), 300); }, 3000);
 };
 
 const validateForm = () => {
-  if (!kasirInput.value.trim()) {
-    alert("⚠️ GAGAL!\nMohon isi Nama Kasir.");
-    kasirInput.focus();
-    return false;
-  }
-  for (let id of ["awalFc", "awalNasi", "jualFc", "jualGeprek", "jualNasi"]) {
-    if (document.getElementById(id).value === "") {
-      alert(
-        "⚠️ GAGAL!\nPastikan semua form Stok dan Penjualan terisi (minimal 0).",
-      );
-      document.getElementById(id).focus();
-      return false;
+    if (!kasirInput.value.trim()) { alert('⚠️ GAGAL!\nMohon isi Nama Kasir.'); kasirInput.focus(); return false; }
+    for (let id of ['awalFc', 'awalNasi', 'jualFc', 'jualGeprek', 'jualNasi']) {
+        if (document.getElementById(id).value === '') { alert('⚠️ GAGAL!\nPastikan semua form Stok dan Penjualan terisi (minimal 0).'); document.getElementById(id).focus(); return false; }
     }
-  }
-  return true;
+    return true;
 };
 
+// FORMAT TEKS LAPORAN (DISESUAIKAN DENGAN TEMPLATE)
 const generateReportText = () => {
-  const kasir = kasirInput.value || "-";
-  const jualFc = parseInt(document.getElementById("jualFc").value) || 0;
-  const jualGeprek = parseInt(document.getElementById("jualGeprek").value) || 0;
-  const jualNasi = parseInt(document.getElementById("jualNasi").value) || 0;
-  const totalPenjualan =
-    jualFc * HARGA.fc + jualGeprek * HARGA.geprek + jualNasi * HARGA.nasi;
+    const kasir = kasirInput.value || '-';
+    const jualFc = parseInt(document.getElementById('jualFc').value) || 0;
+    const jualGeprek = parseInt(document.getElementById('jualGeprek').value) || 0;
+    const jualNasi = parseInt(document.getElementById('jualNasi').value) || 0;
+    const totalPenjualan = (jualFc * HARGA.fc) + (jualGeprek * HARGA.geprek) + (jualNasi * HARGA.nasi);
 
-  let daftarPemasukan = "",
-    totalInc = 0;
-  const incItems = document.querySelectorAll(".income-item");
-  if (incItems.length === 0) daftarPemasukan = "Tidak ada pemasukan lain\n";
-  else
-    incItems.forEach((item) => {
-      const desc =
-        item.querySelector(".income-desc").value || "Tanpa keterangan";
-      const amount = parseCurrency(item.querySelector(".income-amount").value);
-      if (amount > 0) {
-        daftarPemasukan += `• ${desc} : Rp${new Intl.NumberFormat("id-ID").format(amount)}\n`;
-        totalInc += amount;
-      }
-    });
+    let daftarPemasukan = '', totalInc = 0;
+    const incItems = document.querySelectorAll('.income-item');
+    if (incItems.length === 0) {
+        daftarPemasukan = 'Tidak ada pemasukan lainnya\n';
+    } else {
+        incItems.forEach(item => {
+            const desc = item.querySelector('.income-desc').value || 'Tanpa keterangan';
+            const amount = parseCurrency(item.querySelector('.income-amount').value);
+            if(amount > 0) { 
+                daftarPemasukan += `• ${desc} : Rp${new Intl.NumberFormat('id-ID').format(amount)}\n`; 
+                totalInc += amount; 
+            }
+        });
+    }
 
-  let daftarPengeluaran = "",
-    totalExp = 0;
-  const expItems = document.querySelectorAll(".expense-item");
-  if (expItems.length === 0) daftarPengeluaran = "Tidak ada pengeluaran\n";
-  else
-    expItems.forEach((item) => {
-      const desc =
-        item.querySelector(".expense-desc").value || "Tanpa keterangan";
-      const amount = parseCurrency(item.querySelector(".expense-amount").value);
-      if (amount > 0) {
-        daftarPengeluaran += `• ${desc} : Rp${new Intl.NumberFormat("id-ID").format(amount)}\n`;
-        totalExp += amount;
-      }
-    });
+    let daftarPengeluaran = '', totalExp = 0;
+    const expItems = document.querySelectorAll('.expense-item');
+    if (expItems.length === 0) {
+        daftarPengeluaran = 'Tidak ada pengeluaran\n';
+    } else {
+        expItems.forEach(item => {
+            const desc = item.querySelector('.expense-desc').value || 'Tanpa keterangan';
+            const amount = parseCurrency(item.querySelector('.expense-amount').value);
+            if(amount > 0) { 
+                daftarPengeluaran += `• ${desc} : Rp${new Intl.NumberFormat('id-ID').format(amount)}\n`; 
+                totalExp += amount; 
+            }
+        });
+    }
 
-  const formatNumStr = (num) => new Intl.NumberFormat("id-ID").format(num);
+    const formatNumStr = num => new Intl.NumberFormat('id-ID').format(num);
 
-  return `📋 *LAPORAN REKAP PENJUALAN PM FRIED CHICKEN*
+    return `📋 *LAPORAN REKAP PENJUALAN PM FRIED CHICKEN*
 
 📅 Hari/Tanggal : ${document.getElementById("hari").value}, ${document.getElementById("tanggal").value}
 ⏰ Jam : ${document.getElementById("jam").value}
@@ -377,114 +371,95 @@ Total Pengeluaran : Rp${formatNumStr(totalExp)}
 ━━━━━━━━━━━━━━
 📊 REKAP AKHIR
 Total Penjualan : Rp${formatNumStr(totalPenjualan)}
-Total Pemasukan : Rp${formatNumStr(totalInc)}
+Total Pemasukan Lainnya : Rp${formatNumStr(totalInc)}
 Total Pengeluaran : Rp${formatNumStr(totalExp)}
 Saldo Akhir : Rp${formatNumStr(totalPenjualan + totalInc - totalExp)}
 ━━━━━━━━━━━━━━
 
 
-*Laporan dibuat melalui Sistem Rekap Penjualan PM Fried Chicken Kendayakan*`;
+_Laporan dibuat melalui Sistem Rekap Penjualan PM Fried Chicken Kendayakan_`;
 };
 
 const processAndSend = () => {
-  if (!validateForm()) return;
+    if(!validateForm()) return;
 
-  const text = generateReportText();
-  const totalPenj = parseCurrency(
-    document.getElementById("sumPenjualan").textContent,
-  );
-  const totalSaldo = parseCurrency(
-    document.getElementById("saldoAkhir").textContent,
-  );
+    const text = generateReportText();
+    const totalPenj = parseCurrency(document.getElementById('sumPenjualan').textContent);
+    const totalSaldo = parseCurrency(document.getElementById('saldoAkhir').textContent);
+    
+    saveToDatabase(text, kasirInput.value, totalPenj, totalSaldo);
 
-  saveToDatabase(text, kasirInput.value, totalPenj, totalSaldo);
-
-  const encodedText = encodeURIComponent(text);
-  const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
-
-  document.getElementById("loading").classList.remove("hidden");
-  setTimeout(() => {
-    document.getElementById("loading").classList.add("hidden");
-    window.open(waUrl, "_blank");
-    showToast("Data Disimpan & Membuka WA...");
-  }, 800);
+    const encodedText = encodeURIComponent(text);
+    const waUrl = `https://api.whatsapp.com/send?text=${encodedText}`;
+    
+    document.getElementById('loading').classList.remove('hidden');
+    setTimeout(() => {
+        document.getElementById('loading').classList.add('hidden');
+        window.open(waUrl, '_blank');
+        showToast('Data Disimpan & Membuka WA...');
+    }, 800);
 };
 
-window.closeModal = (id) => document.getElementById(id).classList.add("hidden");
+window.closeModal = (id) => document.getElementById(id).classList.add('hidden');
 
-document.getElementById("btnPreview").addEventListener("click", () => {
-  if (validateForm()) {
-    document.getElementById("previewText").textContent = generateReportText();
-    document.getElementById("previewModal").classList.remove("hidden");
-  }
+document.getElementById('btnPreview').addEventListener('click', () => {
+    if(validateForm()) { document.getElementById('previewText').textContent = generateReportText(); document.getElementById('previewModal').classList.remove('hidden'); }
 });
 
-document.getElementById("btnRiwayat").addEventListener("click", () => {
-  loadHistory();
-  document.getElementById("riwayatModal").classList.remove("hidden");
+document.getElementById('btnRiwayat').addEventListener('click', () => {
+    loadHistory();
+    document.getElementById('riwayatModal').classList.remove('hidden');
 });
 
-document.getElementById("btnKirim").addEventListener("click", processAndSend);
-document.getElementById("btnKirimModal").addEventListener("click", () => {
-  closeModal("previewModal");
-  processAndSend();
+document.getElementById('btnKirim').addEventListener('click', processAndSend);
+document.getElementById('btnKirimModal').addEventListener('click', () => { closeModal('previewModal'); processAndSend(); });
+
+document.getElementById('btnReset').addEventListener('click', () => {
+    if(confirm('Yakin ingin mereset form?')) {
+        document.querySelectorAll('input[type="number"]').forEach(input => input.value = 0);
+        kasirInput.value = ''; expenseList.innerHTML = ''; incomeList.innerHTML = ''; calculateAll(); showToast('Form di-reset');
+    }
 });
 
-document.getElementById("btnReset").addEventListener("click", () => {
-  if (confirm("Yakin ingin mereset form?")) {
-    document
-      .querySelectorAll('input[type="number"]')
-      .forEach((input) => (input.value = 0));
-    kasirInput.value = "";
-    expenseList.innerHTML = "";
-    incomeList.innerHTML = "";
-    calculateAll();
-    showToast("Form di-reset");
-  }
-});
-
-document.getElementById("darkModeToggle").addEventListener("click", () => {
-  document.body.classList.toggle("dark-mode");
-  const isDark = document.body.classList.contains("dark-mode");
-  localStorage.setItem("pm_darkmode", isDark);
-  document.getElementById("themeIcon").className = isDark
-    ? "fas fa-sun"
-    : "fas fa-moon";
+document.getElementById('darkModeToggle').addEventListener('click', () => {
+    document.body.classList.toggle('dark-mode');
+    const isDark = document.body.classList.contains('dark-mode');
+    localStorage.setItem('pm_darkmode', isDark);
+    document.getElementById('themeIcon').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
 });
 
 // --- PWA INSTALLATION LOGIC ---
 let deferredPrompt;
-window.addEventListener("beforeinstallprompt", (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  document.getElementById("btnInstall").classList.remove("hidden"); // Memunculkan tombol jika didukung
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Munculkan tombol jika didukung
+    document.getElementById('btnInstall').classList.remove('hidden'); 
 });
 
-document.getElementById("btnInstall").addEventListener("click", async () => {
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    if (outcome === "accepted")
-      document.getElementById("btnInstall").classList.add("hidden");
-    deferredPrompt = null;
-  }
+document.getElementById('btnInstall').addEventListener('click', async () => {
+    if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            document.getElementById('btnInstall').classList.add('hidden');
+        }
+        deferredPrompt = null;
+    } else {
+        alert("PANDUAN INSTALL:\n\nAndroid (Chrome):\nKlik titik tiga (⋮) di pojok kanan atas browser, lalu pilih 'Tambahkan ke Layar Utama' (Add to Home screen).\n\niPhone (Safari):\nKlik ikon 'Bagikan' (Kotak panah atas) di bawah layar, scroll, lalu pilih 'Tambah ke Layar Utama'.");
+    }
 });
 
 // Init
-window.addEventListener("DOMContentLoaded", () => {
-  setupDateTime();
-  setupQtyControls();
-  calculateAll();
-  const isDark = localStorage.getItem("pm_darkmode") === "true";
-  if (isDark) document.body.classList.add("dark-mode");
-  document.getElementById("themeIcon").className = isDark
-    ? "fas fa-sun"
-    : "fas fa-moon";
+window.addEventListener('DOMContentLoaded', () => {
+    setupDateTime(); setupQtyControls(); calculateAll();
+    const isDark = localStorage.getItem('pm_darkmode') === 'true';
+    if (isDark) document.body.classList.add('dark-mode');
+    document.getElementById('themeIcon').className = isDark ? 'fas fa-sun' : 'fas fa-moon';
+    
+    document.getElementById('btnInstall').classList.remove('hidden');
 });
 
-if ("serviceWorker" in navigator) {
-  // Mendaftarkan service worker untuk PWA (Vercel Support)
-  window.addEventListener("load", () =>
-    navigator.serviceWorker.register("/service-worker.js", { scope: "/" }),
-  );
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => navigator.serviceWorker.register('/service-worker.js', { scope: '/' }));
 }
