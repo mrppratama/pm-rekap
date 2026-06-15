@@ -303,7 +303,7 @@ Saldo Akhir : Rp${formatNumber(totalPenjualan + totalInc - totalExp)}
 _Laporan dibuat melalui Sistem Rekap Penjualan PM Fried Chicken Kendayakan_`;
 };
 
-// Tabel Detail Database Mobile Friendly (Bentuk Tabel Datar, BUKAN Card Bersarang)
+// Tabel Detail Mobile Friendly Murni (Sama Persis Kasir & Owner)
 const generateDetailTableHTML = (item) => {
   const raw = item.rawData;
   if (!raw || !raw.incomes) return `<pre style="margin:0; font-family:monospace; padding: 15px; word-break: break-word;">${item.laporanLengkap}</pre>`;
@@ -326,7 +326,6 @@ const generateDetailTableHTML = (item) => {
   });
   if (raw.expenses.length === 0) expensesHtml = `<tr><td colspan="2" class="td-center text-muted">Tidak ada pengeluaran</td></tr>`;
 
-  // Stuktur disederhanakan murni menjadi 2 Kolom (Label Kiri, Nilai Kanan) untuk kompatibilitas 100% Flex di Mobile
   return `
         <div class="detail-wrapper">
         <table class="detail-table">
@@ -470,7 +469,7 @@ const loadKasirHistory = () => {
     }
 
     data.sort((a, b) => b.timestamp - a.timestamp);
-    let html = `<div style="overflow-x: auto; width: 100%;"><table class="history-table"><thead><tr><th>Waktu</th><th>Kasir</th><th>Saldo Akhir</th><th class="text-center">Aksi</th></tr></thead><tbody>`;
+    let html = `<div style="overflow-x: hidden; width: 100%;"><table class="history-table"><thead><tr><th>Waktu</th><th>Kasir</th><th>Saldo Akhir</th><th class="text-center">Aksi</th></tr></thead><tbody>`;
 
     data.forEach((item) => {
       html += `
@@ -651,7 +650,8 @@ const renderAdminDashboard = () => {
     }
 
     allReportsGlobal.sort((a, b) => b.timestamp - a.timestamp);
-    let html = `<div style="overflow-x: auto; width: 100%;"><table class="history-table"><thead><tr><th>Waktu</th><th>Kasir</th><th>Saldo Akhir</th><th class="text-center">Aksi</th></tr></thead><tbody>`;
+    // Disamakan struktur hidden-nya persis dengan kasir agar tidak meluber
+    let html = `<div style="overflow-x: hidden; width: 100%;"><table class="history-table"><thead><tr><th>Waktu</th><th>Kasir</th><th>Saldo Akhir</th><th class="text-center">Aksi</th></tr></thead><tbody>`;
 
     allReportsGlobal.forEach((item) => {
       html += `
