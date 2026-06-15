@@ -171,9 +171,9 @@
         </div>
 
         <section class="card" style="margin-top: 20px;">
-            <div class="header-between">
+            <div class="header-between admin-wrap-header">
                 <h2><i class="fas fa-chart-line"></i> Grafik Pendapatan Bersih</h2>
-                <div style="min-width: 200px;">
+                <div class="admin-chart-dropdown">
                     <select id="chartFilterType" style="padding: 8px; border-radius: 6px; width: 100%;">
                         <option value="7hari">7 Hari Terakhir</option>
                         <option value="mingguan">Per Minggu</option>
@@ -188,15 +188,16 @@
                 <div class="form-group"><label>Sampai Tanggal</label><input type="date" id="chartDateEnd"></div>
                 <button id="btnApplyChartFilter" class="btn btn-orange" style="grid-column: 1 / -1;">Terapkan Filter Custom</button>
             </div>
-            <div style="position: relative; height: 300px; width: 100%;">
+            
+            <div class="chart-wrapper">
                 <canvas id="salesChart"></canvas>
             </div>
         </section>
 
-        <section class="card" style="margin-top: 20px;">
+        <section class="card" style="margin-top: 20px; overflow: hidden; max-width: 100%;">
             <h2><i class="fas fa-database"></i> Database Laporan Keseluruhan</h2>
             <div id="adminHistoryContainer" class="history-container">
-                </div>
+            </div>
         </section>
 
         <section class="card" style="margin-top: 20px;">
@@ -237,7 +238,7 @@
         <div class="modal-content">
             <span class="close-modal" onclick="closeModal('previewModal')">&times;</span>
             <h2>Preview Teks WhatsApp</h2>
-            <pre id="previewText" style="white-space: pre-wrap; font-family: monospace;"></pre>
+            <pre id="previewText" style="white-space: pre-wrap; font-family: monospace; word-break: break-word; overflow-wrap: break-word;"></pre>
             <div class="modal-actions">
                 <button id="btnKirimModal" type="button" class="btn btn-green btn-full"><i class="fab fa-whatsapp"></i> Kirim Pesan WA</button>
             </div>
