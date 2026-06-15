@@ -303,7 +303,7 @@ Saldo Akhir : Rp${formatNumber(totalPenjualan + totalInc - totalExp)}
 _Laporan dibuat melalui Sistem Rekap Penjualan PM Fried Chicken Kendayakan_`;
 };
 
-// TABEL DETAIL KEMBAR (BERLAKU UNTUK KASIR MAUPUN OWNER)
+// Tabel Detail Mobile Friendly Murni (Sama Persis Kasir & Owner)
 const generateDetailTableHTML = (item) => {
   const raw = item.rawData;
   if (!raw || !raw.incomes) return `<pre style="margin:0; font-family:monospace; padding: 15px; word-break: break-word;">${item.laporanLengkap}</pre>`;
@@ -469,7 +469,7 @@ const loadKasirHistory = () => {
     }
 
     data.sort((a, b) => b.timestamp - a.timestamp);
-    let html = `<div class="table-responsive-box"><table class="history-table"><thead><tr><th>Waktu</th><th>Kasir</th><th>Saldo Akhir</th><th class="text-center">Aksi</th></tr></thead><tbody>`;
+    let html = `<div style="overflow-x: hidden; width: 100%;"><table class="history-table"><thead><tr><th>Waktu</th><th>Kasir</th><th>Saldo Akhir</th><th class="text-center">Aksi</th></tr></thead><tbody>`;
 
     data.forEach((item) => {
       html += `
@@ -486,8 +486,8 @@ const loadKasirHistory = () => {
                     </td>
                 </tr>
                 <tr id="kasir-detail-${item.id}" class="hidden detail-row">
-                    <td colspan="4" class="detail-cell">
-                        <div id="content-detail-${item.id}"></div>
+                    <td colspan="4" style="padding: 0; border: none; background: transparent;">
+                        <div id="content-detail-${item.id}" style="padding-bottom: 20px;"></div>
                     </td>
                 </tr>
             `;
@@ -650,9 +650,8 @@ const renderAdminDashboard = () => {
     }
 
     allReportsGlobal.sort((a, b) => b.timestamp - a.timestamp);
-
-    // KODE STRUKTUR INJEKSI TABEL ADMIN DIJAMIN SAMA PERSIS DENGAN KASIR
-    let html = `<div class="table-responsive-box"><table class="history-table"><thead><tr><th>Waktu</th><th>Kasir</th><th>Saldo Akhir</th><th class="text-center">Aksi</th></tr></thead><tbody>`;
+    // Disamakan struktur hidden-nya persis dengan kasir agar tidak meluber
+    let html = `<div style="overflow-x: hidden; width: 100%;"><table class="history-table"><thead><tr><th>Waktu</th><th>Kasir</th><th>Saldo Akhir</th><th class="text-center">Aksi</th></tr></thead><tbody>`;
 
     allReportsGlobal.forEach((item) => {
       html += `
@@ -668,8 +667,8 @@ const renderAdminDashboard = () => {
                     </td>
                 </tr>
                 <tr id="admin-detail-${item.id}" class="hidden detail-row">
-                    <td colspan="4" class="detail-cell">
-                        <div id="admin-content-${item.id}"></div>
+                    <td colspan="4" style="padding: 0; border: none; background: transparent;">
+                        <div id="admin-content-${item.id}" style="padding-bottom: 20px;"></div>
                     </td>
                 </tr>
             `;
