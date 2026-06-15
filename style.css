@@ -20,11 +20,11 @@ body { background-color: var(--bg-color); color: var(--text-main); transition: b
 .login-bg.active { display: block; }
 
 .app-header { background-color: var(--red); color: var(--white); padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0, 0.3); transition: background-color 0.3s; z-index: 10; position: relative;}
-.header-content { display: flex; align-items: center; gap: 15px; }
+.header-content { display: flex; align-items: center; gap: 15px; flex: 1;}
 .logo-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--yellow); background-color: var(--white); }
-.header-text h1 { font-size: 1.2rem; margin-bottom: 2px; }
-.header-text p { font-size: 0.85rem; opacity: 0.9; }
-.header-actions { display: flex; gap: 10px; }
+.header-text h1 { font-size: 1.2rem; margin-bottom: 2px; word-break: break-word; line-height: 1.2;}
+.header-text p { font-size: 0.85rem; opacity: 0.9; line-height: 1.2;}
+.header-actions { display: flex; gap: 10px; flex-shrink: 0;}
 .btn-icon { background: transparent; border: none; color: var(--white); font-size: 1.5rem; cursor: pointer; transition: 0.2s; padding: 5px; }
 .btn-icon:hover { color: var(--yellow); transform: scale(1.1); }
 
@@ -125,7 +125,7 @@ body.dark-mode .action-buttons { background-color: rgba(255, 255, 255, 0.02); }
 .modal-content { background: var(--card-bg); padding: 20px; border-radius: var(--radius); width: 95%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
 .close-modal { float: right; font-size: 1.5rem; cursor: pointer; color: var(--text-main); }
 
-/* --- PENGATURAN TABEL UTAMA & TABEL DETAIL UNTUK DESKTOP --- */
+/* --- PENGATURAN TABEL --- */
 .history-container { width: 100%; overflow-x: auto; margin-top: 15px; }
 .history-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .history-table th, .history-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: normal; word-break: break-word;}
@@ -141,6 +141,8 @@ body.dark-mode .history-table tr:hover { background-color: rgba(255,255,255,0.05
 .text-center { text-align: center; }
 .text-right { text-align: right; }
 
+.chart-wrapper { position: relative; height: 300px; width: 100%; max-width: 100%; overflow: hidden; }
+
 footer { text-align: center; padding: 20px; margin-top: auto; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 1px; font-weight: 600; }
 .loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 2000; }
 body.dark-mode .loading-overlay { background: rgba(0,0,0,0.8); }
@@ -151,16 +153,32 @@ body.dark-mode .loading-overlay { background: rgba(0,0,0,0.8); }
 
 /* --- PERBAIKAN RESPONSIVE LAYOUT UNTUK HP --- */
 @media (max-width: 768px) {
+    /* Perbaikan Header Aplikasi agar Teks membungkus dan Icon tidak terlempar */
+    .app-header { padding: 15px 10px; }
+    .header-content { gap: 10px; }
+    .logo-img { width: 40px; height: 40px; }
+    .header-text h1 { font-size: 1.1rem; }
+    .header-text p { font-size: 0.75rem; }
+    .header-actions { gap: 5px; }
+
+    /* Perbaikan Header Form Custom & PDF */
     .grid-2, .grid-3, .grid-2-desktop { grid-template-columns: 1fr; gap: 15px; }
-    
     #chartFilterCustom, #filterCustom, .grid-2.hidden { display: flex; flex-direction: column; gap: 12px; }
     #chartFilterCustom .btn, #btnApplyChartFilter, #btnDownloadPdf { width: 100%; margin-top: 5px; }
 
+    /* PERBAIKAN KHUSUS HEADER CHART ADMIN (ANTI TABRAKAN) */
+    .admin-wrap-header { flex-direction: column; align-items: stretch; gap: 10px; }
+    .admin-wrap-header h2 { font-size: 1rem; margin-bottom: 0; }
+    .admin-chart-dropdown { width: 100%; min-width: 100% !important; }
+    .chart-wrapper { height: 250px; width: 100%; max-width: 100%; overflow: hidden; }
+    canvas#salesChart { max-width: 100% !important; }
+
+    /* Perbaikan Form Transaksi Tambahan */
     .expense-item, .income-item { flex-wrap: wrap; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color); }
     .expense-desc, .income-desc { flex: 1 1 100%; }
     .expense-amount, .income-amount { flex: 1; }
 
-    /* 1. HISTORY TABLE DIBUAT CARD */
+    /* HISTORY TABLE DIBUAT CARD */
     .history-table thead { display: none !important; }
     .history-table > tbody > tr:not(.detail-row) { 
         display: block; border: 1px solid var(--border-color); border-radius: 8px; 
@@ -179,13 +197,13 @@ body.dark-mode .loading-overlay { background: rgba(0,0,0,0.8); }
     
     .action-flex { width: 100%; justify-content: center; flex-wrap: wrap; gap: 10px; }
 
-    /* 2. AREA WADAH DETAIL: HARUS TRANSPARAN DAN TIDAK PUNYA BORDER */
+    /* WADAH DETAIL: HARUS TRANSPARAN DAN TIDAK PUNYA BORDER */
     .history-table > tbody > tr.detail-row {
         display: block; border: none; background: transparent; box-shadow: none;
         margin-top: -10px; margin-bottom: 20px; padding: 0;
     }
 
-    /* 3. DETAIL TABLE DIBUAT JADI TABEL BIASA MURNI (LIST MEMANJANG, BUKAN CARD) */
+    /* DETAIL TABLE (LIST MEMANJANG) */
     .detail-wrapper {
         display: block; width: 100%; border-radius: 8px; background: var(--card-bg);
         border: 1px solid var(--border-color); overflow: hidden; margin-bottom: 0;
@@ -193,7 +211,6 @@ body.dark-mode .loading-overlay { background: rgba(0,0,0,0.8); }
     .detail-table { display: block; width: 100%; }
     .detail-table tbody { display: block; width: 100%; }
     
-    /* Baris dalam Tabel Detail Menjadi Flexbox Memanjang */
     .detail-table tr {
         display: flex; justify-content: space-between; align-items: center;
         padding: 10px 15px; border-bottom: 1px dashed var(--border-color);
@@ -202,7 +219,6 @@ body.dark-mode .loading-overlay { background: rgba(0,0,0,0.8); }
     }
     .detail-table tr:last-child { border-bottom: none; }
     
-    /* Sel di dalam Tabel Detail */
     .detail-table td, .detail-table th { 
         display: block; border: none; padding: 0; text-align: right; 
     }
@@ -216,7 +232,6 @@ body.dark-mode .loading-overlay { background: rgba(0,0,0,0.8); }
         text-align: center; width: 100%; max-width: 100%;
     }
 
-    /* Header Orange Tabel Detail */
     .detail-table .section-header { 
         background: var(--orange) !important; justify-content: center; padding: 10px;
     }
