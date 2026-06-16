@@ -1,98 +1,241 @@
-// Firebase Configuration
-// PENTING: Ganti dengan konfigurasi Firebase Anda sendiri!
-const firebaseConfig = {
-  apiKey: "AIzaSyBxRTtERQDDMItbUvtymLhJlc_kNuhCjD8",
-  authDomain: "pm-rekapp-app.firebaseapp.com",
-  databaseURL:
-    "https://pm-rekapp-app-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "pm-rekapp-app",
-  storageBucket: "pm-rekapp-app.firebasestorage.app",
-  messagingSenderId: "180516020369",
-  appId: "1:180516020369:web:1e4492a5c4f8a8d2c29f30",
-};
-
-// ===== Adapter agar kompatibel dengan Firebase SDK yang dipakai di index.html =====
-// index.html memuat:
-//   - firebase-app.js (v10)
-//   - firebase-database.js (v10)
-// Tetapi script.js masih memakai pola v8 global (firebase.database(), ref(), push(), on('value')).
-// File ini menyediakan adapter global yang dibutuhkan script.js.
-
-let firebaseApp = null;
-let firebaseDb = null;
-
-try {
-  // Jika versi modular memaparkan fungsi ke global (umumnya tidak), kita coba pakai itu.
-  if (
-    typeof window.initializeApp === "function" &&
-    typeof window.getDatabase === "function"
-  ) {
-    firebaseApp = window.initializeApp(firebaseConfig);
-    firebaseDb = window.getDatabase(firebaseApp);
-  } else if (
-    window.firebase &&
-    window.firebase.initializeApp &&
-    typeof window.firebase.database === "function"
-  ) {
-    // fallback v8 global
-    firebaseApp = window.firebase.initializeApp(firebaseConfig);
-    firebaseDb = window.firebase.database();
-  } else {
-    throw new Error(
-      "Firebase SDK tidak memaparkan initializeApp/getDatabase atau firebase global v8. Cek apakah script Firebase yang dimuat di index.html sesuai dengan versi kode yang digunakan.",
-    );
-  }
-
-  console.log("✅ Firebase berhasil diinisialisasi");
-} catch (err) {
-  console.error("❌ Error inisialisasi Firebase:", err);
-  alert(
-    "⚠️ Firebase belum terkonfigurasi.\n\nPastikan databaseURL benar dan Firebase SDK ter-load dengan benar.\n\nUntuk sementara, aplikasi akan menggunakan localStorage.",
-  );
+:root {
+    --red: #D62828; --red-hover: #b01e1e; 
+    --yellow: #F7B801; --yellow-hover: #dfa601;
+    --orange: #E65100; --orange-hover: #EF6C00; 
+    --slate: #475569; --slate-hover: #334155; 
+    --white: #FFFFFF; --bg-color: #f4f6f9; --text-main: #2b2b2b; --text-muted: #6c757d;
+    --card-bg: #FFFFFF; --border-color: #e9ecef; --green: #28a745;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.05); --radius: 12px;
 }
 
-// ===== Sediakan API yang diharapkan oleh script.js =====
-// script.js memakai:
-//   firebaseDb = firebase.database();
-//   db.ref('reports')
-//   reportsRef.on('value', ...)
-//   reportsRef.push().key
-//   reportsRef.child(id).update/set/remove
+body.dark-mode {
+    --bg-color: #121212; --text-main: #e0e0e0; --text-muted: #a0a0a0;
+    --card-bg: #1e1e1e; --border-color: #333; --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
 
-// Jika firebaseDb berasal dari SDK v8, ref() sudah ada.
-// Jika berasal dari SDK v10 modular, tidak ada ref/push/update/remove gaya v8 tanpa rewrite besar.
-// Jadi adapter ini hanya menyiapkan getReportsRef untuk v8-style.
+* { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }
+body { background-color: var(--bg-color); color: var(--text-main); transition: background-color 0.3s ease, color 0.3s ease; display: flex; flex-direction: column; min-height: 100vh; }
 
-const getReportsRef = () => {
-  if (firebaseDb && typeof firebaseDb.ref === "function") {
-    return firebaseDb.ref("reports");
-  }
-  return null;
-};
+.login-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: url('Bg.jpg') center center/cover no-repeat; opacity: 0.75; z-index: -1; display: none; pointer-events: none; }
+.login-bg.active { display: block; }
 
-// Export untuk script.js
-window.firebaseApp = firebaseApp;
-window.firebaseDb = firebaseDb;
-window.getReportsRef = getReportsRef;
+.app-header { background-color: var(--red); color: var(--white); padding: 20px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 10px rgba(0,0,0, 0.3); transition: background-color 0.3s; z-index: 10; position: relative;}
+.header-content { display: flex; align-items: center; gap: 15px; flex: 1;}
+.logo-img { width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid var(--yellow); background-color: var(--white); }
+.header-text h1 { font-size: 1.2rem; margin-bottom: 2px; word-break: break-word; line-height: 1.2;}
+.header-text p { font-size: 0.85rem; opacity: 0.9; line-height: 1.2;}
+.header-actions { display: flex; gap: 10px; flex-shrink: 0;}
+.btn-icon { background: transparent; border: none; color: var(--white); font-size: 1.5rem; cursor: pointer; transition: 0.2s; padding: 5px; }
+.btn-icon:hover { color: var(--yellow); transform: scale(1.1); }
 
-// Tambahan kompatibilitas: pastikan global yang dicek script.js tersedia
-// script.js saat ini mengecek `typeof firebaseDb !== 'undefined'` (tanpa window. prefix)
-// sehingga kita set juga sebagai property global yang dapat terbaca.
-try {
-  window.firebase = window.firebase || window.firebaseApp || null;
-} catch (_) {}
+.container { max-width: 1024px; margin: 0 auto; padding: 20px; display: flex; flex-direction: column; gap: 20px; position: relative; z-index: 1; flex: 1;}
+.grid-2 { display: grid; grid-template-columns: 1fr; gap: 15px; }
+.grid-3 { display: grid; grid-template-columns: 1fr; gap: 15px; }
+@media (min-width: 768px) { .grid-2 { grid-template-columns: 1fr 1fr; } .grid-2-desktop { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; } .grid-3 { grid-template-columns: 1fr 1fr 1fr; } }
 
-// set juga ke global scope agar `typeof firebaseDb` bernilai benar
-// NOTE: tanpa 'use strict', assignment ke global var akan membuatnya bisa diakses oleh script.js
-try {
-  // @ts-ignore
-  firebaseDb = window.firebaseDb;
-  // @ts-ignore
-  firebaseApp = window.firebaseApp;
-  // @ts-ignore
-  firebaseConfig = firebaseConfig;
-} catch (_) {}
+.view-section { transition: opacity 0.3s; }
+.hidden { display: none !important; }
 
-// pastikan juga property window tetap terisi
-window.firebaseDb = firebaseDb;
-window.firebaseApp = firebaseApp;
+.login-card { background: var(--card-bg); border-radius: var(--radius); padding: 40px 20px; box-shadow: var(--shadow); max-width: 400px; margin: 50px auto; border: 1px solid var(--border-color); text-align: center; }
+.login-card h2 { margin-bottom: 10px; color: var(--text-main); font-size: 1.5rem; }
+
+.stat-card { border-radius: var(--radius); padding: 20px; color: white; display: flex; align-items: center; gap: 15px; box-shadow: var(--shadow); }
+.stat-card.red { background: linear-gradient(135deg, #D62828, #9e1d1d); }
+.stat-card.green { background: linear-gradient(135deg, #28a745, #1e7e34); }
+.stat-card.yellow { background: linear-gradient(135deg, #F7B801, #dfa601); color: var(--text-main); }
+.stat-icon { font-size: 2.5rem; opacity: 0.8; }
+.stat-details span { font-size: 0.9rem; font-weight: 600; opacity: 0.9; }
+.stat-details h3 { font-size: 1.5rem; margin-top: 5px; }
+
+.top-action-bar { display: flex; justify-content: flex-end; }
+.card { background-color: var(--card-bg); border-radius: var(--radius); padding: 20px; box-shadow: var(--shadow); border: 1px solid var(--border-color); }
+.card h2 { font-size: 1.1rem; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+.card h2 i { color: var(--red); }
+.header-between { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px; }
+.header-between h2 { border: none; margin: 0; padding: 0; }
+
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+label { font-size: 0.9rem; font-weight: 600; color: var(--text-muted); }
+input, select { width: 100%; padding: 10px 12px; border: 1px solid var(--border-color); border-radius: 8px; background-color: var(--bg-color); color: var(--text-main); font-size: 1rem; }
+input:focus, select:focus { outline: none; border-color: var(--yellow); box-shadow: 0 0 0 3px rgba(247, 184, 1, 0.2); }
+.readonly-input { background-color: var(--border-color); cursor: not-allowed; font-weight: bold; }
+
+.qty-control { display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; overflow: hidden; background-color: var(--bg-color); width: 140px; }
+.qty-control input { border: none; border-radius: 0; text-align: center; font-weight: bold; width: 100%; min-width: 50px; padding: 10px 2px; }
+.qty-control input::-webkit-outer-spin-button, .qty-control input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.btn-qty { background: transparent; border: none; padding: 10px 15px; cursor: pointer; font-size: 1rem; color: var(--text-main); }
+.btn-qty:hover { background: var(--yellow); color: var(--white); }
+
+.sales-list { display: flex; flex-direction: column; gap: 15px; }
+.sales-item { display: flex; flex-direction: column; gap: 10px; padding-bottom: 15px; border-bottom: 1px solid var(--border-color); }
+.sales-info { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.sales-info strong { font-size: 1.05rem; }
+.sales-info span { font-size: 0.95rem; font-weight: bold; color: var(--red); }
+.sales-controls { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+.sales-subtotal { text-align: right; font-weight: bold; font-size: 1.1rem; }
+
+.expense-item, .income-item { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color); }
+.expense-desc, .income-desc { flex: 1 1 100%; }
+.expense-amount, .income-amount { flex: 1; }
+.expense-item .btn-danger, .income-item .btn-danger { flex: 0 0 auto; }
+@media (min-width: 768px) { .expense-item, .income-item { flex-wrap: nowrap; padding-bottom: 0; border-bottom: none; } .expense-desc, .income-desc { flex: 2; } .expense-amount, .income-amount { flex: 1.5; } }
+
+.total-bar { display: flex; justify-content: space-between; align-items: center; padding-top: 15px; font-size: 1.1rem; }
+.total-bar strong { font-size: 1.3rem; }
+.summary-grid { display: flex; flex-direction: column; gap: 10px; }
+.summary-item { display: flex; justify-content: space-between; font-size: 1.1rem; }
+.summary-item.final { margin-top: 10px; padding-top: 10px; border-top: 2px dashed var(--border-color); font-size: 1.3rem; font-weight: bold; }
+.text-green { color: var(--green); }
+.text-red { color: var(--red); }
+.font-bold { font-weight: bold; }
+
+.btn, .btn-small { border: none; border-radius: 8px; cursor: pointer; font-weight: 600; transition: all 0.3s ease; text-align: center; display: inline-flex; align-items: center; justify-content: center; gap: 8px; }
+.btn { padding: 12px 20px; font-size: 1rem; }
+.btn-small { padding: 8px 12px; font-size: 0.85rem; }
+.btn-primary { background-color: var(--red); color: var(--white); border: 2px solid var(--red); }
+.btn-primary:hover { background-color: var(--red-hover); border-color: var(--red-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(214, 40, 40, 0.3); }
+.btn-green { background-color: var(--green); color: var(--white); border: 2px solid var(--green); }
+.btn-green:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3); }
+.btn-secondary { background-color: var(--slate); color: var(--white); border: 2px solid var(--slate); }
+.btn-secondary:hover { background-color: var(--slate-hover); border-color: var(--slate-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(71, 85, 105, 0.3); }
+.btn-yellow { background-color: var(--yellow); color: #1a1a1a; border: 2px solid var(--yellow); }
+.btn-yellow:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(247, 184, 1, 0.3); }
+.btn-orange { background-color: var(--orange); color: var(--white); border: 2px solid var(--orange); }
+.btn-orange:hover { background-color: var(--orange-hover); border-color: var(--orange-hover); transform: translateY(-2px); box-shadow: 0 4px 12px rgba(230, 81, 0, 0.3); }
+.btn-outline { background-color: transparent; border: 2px solid var(--border-color); color: var(--text-main); }
+.btn-outline:hover { background-color: var(--border-color); }
+.btn-danger { background-color: var(--red); color: var(--white); padding: 10px; border-radius: 8px; border: 2px solid var(--red); }
+.btn-danger:hover { background-color: var(--red-hover); border-color: var(--red-hover); }
+.btn-full { width: 100%; }
+
+.btn-icon-small { border: none; border-radius: 6px; padding: 8px; cursor: pointer; color: white; display: inline-flex; align-items: center; justify-content: center; font-size: 0.9rem;}
+.btn-icon-small.btn-secondary { background: var(--slate); }
+.btn-icon-small.btn-danger { background: var(--red); }
+.btn-icon-small.btn-yellow { background: var(--yellow); color: var(--text-main); }
+.btn-icon-small.btn-orange { background: var(--orange); }
+.action-flex { display: flex; gap: 5px; flex-wrap: nowrap;}
+
+.action-buttons { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; padding: 15px; background-color: rgba(0, 0, 0, 0.02); border-radius: 12px; border: 1px solid var(--border-color); }
+body.dark-mode .action-buttons { background-color: rgba(255, 255, 255, 0.02); }
+.btn-large { flex-grow: 1; }
+@media (min-width: 768px) { .action-buttons { justify-content: flex-end; } .btn-large { flex-grow: 0; min-width: 250px; } }
+
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 1000; }
+.modal.hidden { display: none; }
+.modal-content { background: var(--card-bg); padding: 20px; border-radius: var(--radius); width: 95%; max-width: 650px; max-height: 90vh; overflow-y: auto; }
+.close-modal { float: right; font-size: 1.5rem; cursor: pointer; color: var(--text-main); }
+
+/* --- PENGATURAN TABEL --- */
+.history-container { width: 100%; overflow-x: auto; margin-top: 15px; }
+.history-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+.history-table th, .history-table td { padding: 12px 10px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: normal; word-break: break-word;}
+.history-table th { background-color: var(--bg-color); color: var(--text-main); font-weight: 600; }
+.history-table tr:hover { background-color: rgba(0,0,0,0.02); }
+body.dark-mode .history-table tr:hover { background-color: rgba(255,255,255,0.05); }
+
+.detail-wrapper { background: var(--card-bg); border-radius: 8px; overflow: hidden; border: 1px solid var(--border-color); margin-bottom: 10px; box-shadow: var(--shadow); }
+.detail-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+.detail-table td, .detail-table th { border: 1px solid var(--border-color); padding: 8px 12px; }
+.detail-table th { background: var(--bg-color); font-weight: 600; }
+.detail-table .section-header th { background: var(--orange); color: white; font-weight: bold; text-align: center; font-size: 0.9rem; padding: 10px; border: none; }
+.text-center { text-align: center; }
+.text-right { text-align: right; }
+
+.chart-wrapper { position: relative; height: 300px; width: 100%; max-width: 100%; overflow: hidden; }
+
+footer { text-align: center; padding: 20px; margin-top: auto; font-size: 0.85rem; color: var(--text-muted); letter-spacing: 1px; font-weight: 600; }
+.loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.8); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+body.dark-mode .loading-overlay { background: rgba(0,0,0,0.8); }
+.spinner { border: 4px solid var(--border-color); border-top: 4px solid var(--red); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; }
+@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #333; color: #fff; padding: 12px 24px; border-radius: 30px; z-index: 3000; opacity: 0; transition: opacity 0.3s; }
+.toast.show { opacity: 1; }
+
+/* --- PERBAIKAN RESPONSIVE LAYOUT UNTUK HP --- */
+@media (max-width: 768px) {
+    /* Perbaikan Header Aplikasi agar Teks membungkus dan Icon tidak terlempar */
+    .app-header { padding: 15px 10px; }
+    .header-content { gap: 10px; }
+    .logo-img { width: 40px; height: 40px; }
+    .header-text h1 { font-size: 1.1rem; }
+    .header-text p { font-size: 0.75rem; }
+    .header-actions { gap: 5px; }
+
+    /* Perbaikan Header Form Custom & PDF */
+    .grid-2, .grid-3, .grid-2-desktop { grid-template-columns: 1fr; gap: 15px; }
+    #chartFilterCustom, #filterCustom, .grid-2.hidden { display: flex; flex-direction: column; gap: 12px; }
+    #chartFilterCustom .btn, #btnApplyChartFilter, #btnDownloadPdf { width: 100%; margin-top: 5px; }
+
+    /* PERBAIKAN KHUSUS HEADER CHART ADMIN (ANTI TABRAKAN) */
+    .admin-wrap-header { flex-direction: column; align-items: stretch; gap: 10px; }
+    .admin-wrap-header h2 { font-size: 1rem; margin-bottom: 0; }
+    .admin-chart-dropdown { width: 100%; min-width: 100% !important; }
+    .chart-wrapper { height: 250px; width: 100%; max-width: 100%; overflow: hidden; }
+    canvas#salesChart { max-width: 100% !important; }
+
+    /* Perbaikan Form Transaksi Tambahan */
+    .expense-item, .income-item { flex-wrap: wrap; padding-bottom: 15px; border-bottom: 1px dashed var(--border-color); }
+    .expense-desc, .income-desc { flex: 1 1 100%; }
+    .expense-amount, .income-amount { flex: 1; }
+
+    /* HISTORY TABLE DIBUAT CARD */
+    .history-table thead { display: none !important; }
+    .history-table > tbody > tr:not(.detail-row) { 
+        display: block; border: 1px solid var(--border-color); border-radius: 8px; 
+        margin-bottom: 15px; background: var(--card-bg); box-shadow: var(--shadow); 
+    }
+    .history-table > tbody > tr:not(.detail-row) > td { 
+        display: flex; justify-content: space-between; align-items: center; 
+        text-align: right; border-bottom: 1px dashed var(--border-color); padding: 12px; 
+    }
+    .history-table > tbody > tr:not(.detail-row) > td::before { 
+        content: attr(data-label); font-weight: 600; color: var(--text-muted); text-align: left; flex-shrink: 0; 
+    }
+    .history-table > tbody > tr:not(.detail-row) > td > * { max-width: 60%; word-break: break-word; }
+    .history-table > tbody > tr:not(.detail-row) > td:last-child { border-bottom: none; justify-content: center; }
+    .history-table > tbody > tr:not(.detail-row) > td:last-child::before { display: none; }
+    
+    .action-flex { width: 100%; justify-content: center; flex-wrap: wrap; gap: 10px; }
+
+    /* WADAH DETAIL: HARUS TRANSPARAN DAN TIDAK PUNYA BORDER */
+    .history-table > tbody > tr.detail-row {
+        display: block; border: none; background: transparent; box-shadow: none;
+        margin-top: -10px; margin-bottom: 20px; padding: 0;
+    }
+
+    /* DETAIL TABLE (LIST MEMANJANG) */
+    .detail-wrapper {
+        display: block; width: 100%; border-radius: 8px; background: var(--card-bg);
+        border: 1px solid var(--border-color); overflow: hidden; margin-bottom: 0;
+    }
+    .detail-table { display: block; width: 100%; }
+    .detail-table tbody { display: block; width: 100%; }
+    
+    .detail-table tr {
+        display: flex; justify-content: space-between; align-items: center;
+        padding: 10px 15px; border-bottom: 1px dashed var(--border-color);
+        background: transparent !important; margin: 0 !important; 
+        border-radius: 0 !important; box-shadow: none !important;
+    }
+    .detail-table tr:last-child { border-bottom: none; }
+    
+    .detail-table td, .detail-table th { 
+        display: block; border: none; padding: 0; text-align: right; 
+    }
+    .detail-table .td-label { 
+        text-align: left; font-weight: 600; color: var(--text-muted); flex: 1; padding-right: 10px; 
+    }
+    .detail-table .td-value { 
+        flex-shrink: 0; max-width: 55%; word-break: break-word; 
+    }
+    .detail-table .td-center {
+        text-align: center; width: 100%; max-width: 100%;
+    }
+
+    .detail-table .section-header { 
+        background: var(--orange) !important; justify-content: center; padding: 10px;
+    }
+    .detail-table .section-header th { 
+        color: white; text-align: center; width: 100%; 
+    }
+}
