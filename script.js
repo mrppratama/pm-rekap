@@ -366,19 +366,25 @@ function renderNotificationList() {
 }
 
 window.showNotificationCenterModal = (e) => {
-  if (e) e.stopPropagation();
+  if (e) {
+    if (typeof e.stopPropagation === "function") e.stopPropagation();
+    if (typeof e.preventDefault === "function") e.preventDefault();
+  }
   const wrapper = document.getElementById("userAccountWrapper");
   if (wrapper) wrapper.classList.remove("open");
 
-  const modal = document.getElementById("notifCenterModal");
-  if (modal) modal.classList.remove("hidden");
-
-  // Mark all notifications as read
+  // Mark all notifications as read and render list
   const list = getNotificationHistory();
   list.forEach((n) => (n.unread = false));
   saveNotificationHistory(list);
   updateNotificationBadges();
   renderNotificationList();
+
+  const modal = document.getElementById("notifCenterModal");
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  }
 };
 
 window.clearAllNotifications = () => {
@@ -947,11 +953,17 @@ const switchView = (role) => {
 };
 
 window.showAppChangelogModal = (e) => {
-  if (e) e.stopPropagation();
+  if (e) {
+    if (typeof e.stopPropagation === "function") e.stopPropagation();
+    if (typeof e.preventDefault === "function") e.preventDefault();
+  }
   const wrapper = document.getElementById("userAccountWrapper");
   if (wrapper) wrapper.classList.remove("open");
   const modal = document.getElementById("changelogModal");
-  if (modal) modal.classList.remove("hidden");
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  }
 };
 
 const handleLogout = async () => {
@@ -2759,7 +2771,13 @@ document.getElementById("btnDownloadPdf").addEventListener("click", async () => 
 });
 
 // UI Triggers Tambahan
-window.closeModal = (id) => document.getElementById(id).classList.add("hidden");
+window.closeModal = (id) => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.classList.add("hidden");
+    el.style.display = "none";
+  }
+};
 
 const showToast = (msg) => {
   const toast = document.getElementById("toast");
