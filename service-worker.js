@@ -1,10 +1,12 @@
-const CACHE_NAME = "pm-rekap-v4.2";
+const CACHE_NAME = "pm-rekap-v4.3";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
   "/style.css",
   "/script.js",
   "/firebase-config.js",
+  "/kaching-sound-fix.mp3",
+  "/kaching-sound-fx.mp3",
   "/favicon.png",
   "/favicon-32.png",
   "/icon-192.png",

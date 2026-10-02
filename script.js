@@ -229,8 +229,33 @@ const useLocalStorage = () => {
   onDataChanged();
 };
 
-// --- NOTIFICATION & CHIME AUDIO SYSTEM ---
+// --- NOTIFICATION & CHIME AUDIO SYSTEM (KACHING SOUND) ---
+let notifAudioInstance = null;
+
 function playNotificationSound() {
+  try {
+    if (!notifAudioInstance) {
+      notifAudioInstance = new Audio("kaching-sound-fix.mp3");
+    }
+    notifAudioInstance.currentTime = 0;
+    const playPromise = notifAudioInstance.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Fallback to secondary file name or synth chime if autoplay policy blocks
+        try {
+          const fallbackAudio = new Audio("kaching-sound-fx.mp3");
+          fallbackAudio.play().catch(() => playSynthFallbackChime());
+        } catch (_) {
+          playSynthFallbackChime();
+        }
+      });
+    }
+  } catch (_) {
+    playSynthFallbackChime();
+  }
+}
+
+function playSynthFallbackChime() {
   try {
     const AudioCtx = window.AudioContext || window.webkitAudioContext;
     if (!AudioCtx) return;
