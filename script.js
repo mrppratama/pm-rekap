@@ -51,7 +51,7 @@ let kasirFilterState = {
 };
 
 let adminFilterState = {
-  type: "all",
+  type: "7days",
   startDate: "",
   endDate: "",
 };
@@ -483,9 +483,9 @@ window.jumpToReportInTable = () => {
     adminFilterState.type = "all";
     adminFilterState.startDate = "";
     adminFilterState.endDate = "";
-    const adminFilterRange = document.getElementById("adminFilterRange");
-    if (adminFilterRange) adminFilterRange.value = "all";
-    document.getElementById("adminCustomDateWrap")?.classList.add("hidden");
+    const adminUnifiedFilter = document.getElementById("adminUnifiedFilter");
+    if (adminUnifiedFilter) adminUnifiedFilter.value = "all";
+    document.getElementById("adminUnifiedCustomDates")?.classList.add("hidden");
 
     let sorted = [...allReportsGlobal].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     let idx = sorted.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
@@ -566,19 +566,26 @@ async function sendNativeNotification(title, body, tag = "pm-rekap", type = "sys
 
   if (Notification.permission === "default") {
     try {
-      await Notification.requestPermission();
-    } catch (_) {}
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") return;
+    } catch (_) {
+      return;
+    }
   }
 
   if (Notification.permission === "granted") {
+    const iconUrl = new URL("icon-192.png", window.location.href).href;
+    const badgeUrl = new URL("favicon-32.png", window.location.href).href;
+
+    let shownDirect = false;
     try {
-      // In Desktop browsers, standard Web Notification shows the Windows/Mac notification banner immediately
       const n = new Notification(title, {
         body: body,
-        icon: "/icon-192.png",
-        badge: "/favicon-32.png",
+        icon: iconUrl,
+        badge: badgeUrl,
         tag: tag + "_" + Date.now(),
         requireInteraction: false,
+        data: { reportId: reportId },
       });
       n.onclick = function () {
         window.focus();
@@ -587,23 +594,34 @@ async function sendNativeNotification(title, body, tag = "pm-rekap", type = "sys
           openNotificationDetail(null, reportId);
         }
       };
+      shownDirect = true;
     } catch (e) {
-      // If direct Notification constructor throws in PWA context, use serviceWorker registration
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.ready.then((reg) => {
-          if (reg) {
-            reg.showNotification(title, {
-              body: body,
-              icon: "/icon-192.png",
-              badge: "/favicon-32.png",
-              tag: tag + "_" + Date.now(),
-              data: { reportId: reportId },
-            });
-          }
-        });
-      }
+      shownDirect = false;
+    }
+
+    if (!shownDirect && "serviceWorker" in navigator) {
+      navigator.serviceWorker.ready.then((reg) => {
+        if (reg && typeof reg.showNotification === "function") {
+          reg.showNotification(title, {
+            body: body,
+            icon: iconUrl,
+            badge: badgeUrl,
+            tag: tag + "_" + Date.now(),
+            data: { reportId: reportId },
+          });
+        }
+      });
     }
   }
+}
+
+// Listen to notification clicks received from Service Worker
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.addEventListener("message", (event) => {
+    if (event.data && event.data.type === "OPEN_REPORT_DETAIL" && event.data.reportId) {
+      openNotificationDetail(null, event.data.reportId);
+    }
+  });
 }
 
 let knownReportTimestamps = new Map();
@@ -2524,8 +2542,6 @@ const renderAdminDashboard = () => {
   document.getElementById("statMonth").textContent = formatRupiah(saldoMonth);
   document.getElementById("statTotalDoc").textContent = reports.length;
 
-  updateAdminChart();
-
   let filteredReports = filterReportsByDate(
     reports,
     adminFilterState.type,
@@ -2533,10 +2549,26 @@ const renderAdminDashboard = () => {
     adminFilterState.endDate,
   );
 
+  // Update Status Badges for Chart and Database Table
+  let badgeText = "7 Hari Terakhir";
+  if (adminFilterState.type === "today") badgeText = `Hari Ini (${todayStr})`;
+  else if (adminFilterState.type === "thisMonth") badgeText = `Bulan Ini (${monthStr})`;
+  else if (adminFilterState.type === "all") badgeText = "Semua Waktu";
+  else if (adminFilterState.type === "custom") {
+    badgeText = `${adminFilterState.startDate || "Awal"} s/d ${adminFilterState.endDate || "Akhir"}`;
+  }
+
+  const chartBadge = document.getElementById("chartFilterStatusBadge");
+  const tableBadge = document.getElementById("tableFilterStatusBadge");
+  if (chartBadge) chartBadge.innerHTML = `<i class="fa-regular fa-calendar-check"></i> ${badgeText}`;
+  if (tableBadge) tableBadge.innerHTML = `<i class="fa-regular fa-calendar-check"></i> ${badgeText}`;
+
+  updateAdminChart(filteredReports);
+
   if (filteredReports.length === 0) {
     const isFiltered = adminFilterState.type !== "all";
     container.innerHTML = isFiltered
-      ? '<div class="text-center text-muted" style="padding: 32px 16px;"><i class="fa-solid fa-calendar-xmark" style="font-size: 2.2rem; margin-bottom: 12px; display: block; opacity: 0.4;"></i><p style="font-weight:600; font-size: 0.95rem;">Tidak ada laporan ditemukan pada rentang waktu yang dipilih.</p><button type="button" class="btn btn-secondary btn-small" onclick="resetAdminFilterAction()" style="margin-top: 10px;"><i class="fa-solid fa-rotate-left"></i> Reset Filter Waktu</button></div>'
+      ? '<div class="text-center text-muted" style="padding: 32px 16px;"><i class="fa-solid fa-calendar-xmark" style="font-size: 2.2rem; margin-bottom: 12px; display: block; opacity: 0.4;"></i><p style="font-weight:600; font-size: 0.95rem;">Tidak ada laporan ditemukan pada rentang waktu yang dipilih.</p><button type="button" class="btn btn-secondary btn-small" onclick="resetAdminFilterAction()" style="margin-top: 10px;"><i class="fa-solid fa-rotate-left"></i> Reset Filter (7 Hari)</button></div>'
       : '<p class="text-muted text-center" style="padding: 24px;">Belum ada data rekap laporan masuk.</p>';
     return;
   }
@@ -2631,85 +2663,62 @@ window.toggleAdminDetail = async (id) => {
   }
 };
 
-document
-  .getElementById("chartFilterType")
-  .addEventListener("change", function () {
-    if (this.value === "custom") {
-      document.getElementById("chartFilterCustom").classList.remove("hidden");
-    } else {
-      document.getElementById("chartFilterCustom").classList.add("hidden");
-      updateAdminChart();
-    }
-  });
-
-document.getElementById("btnApplyChartFilter").addEventListener("click", () => {
-  updateAdminChart();
-});
-
-const updateAdminChart = () => {
+const updateAdminChart = (filteredData = null) => {
   if (!allReportsGlobal || allReportsGlobal.length === 0) return;
 
-  const filter = document.getElementById("chartFilterType").value;
-  let filtered = [...allReportsGlobal];
-  const now = new Date();
-
-  if (filter === "7hari") {
-    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    filtered = filtered.filter(
-      (d) =>
-        parseIndoDate(d.tanggal) >= last7Days &&
-        parseIndoDate(d.tanggal) <= now,
-    );
-  } else if (filter === "custom") {
-    const start = document.getElementById("chartDateStart").value;
-    const end = document.getElementById("chartDateEnd").value;
-    if (start && end) {
-      const sDate = new Date(start);
-      sDate.setHours(0, 0, 0, 0);
-      const eDate = new Date(end);
-      eDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter((d) => {
-        const dDate = parseIndoDate(d.tanggal);
-        return dDate >= sDate && dDate <= eDate;
-      });
-    }
-  }
-
-  const map = new Map();
-  filtered.forEach((item) => {
-    const dDate = parseIndoDate(item.tanggal);
-    let key = "";
-
-    if (filter === "7hari" || filter === "custom") {
-      key = item.tanggal;
-    } else if (filter === "mingguan") {
-      const weekNum = Math.ceil(dDate.getDate() / 7);
-      const monthStr = dDate.toLocaleString("id-ID", { month: "short" });
-      key = `Mg ${weekNum} ${monthStr} ${dDate.getFullYear()}`;
-    } else if (filter === "bulanan") {
-      key = `${dDate.toLocaleString("id-ID", { month: "short" })} ${dDate.getFullYear()}`;
-    } else if (filter === "tahun") {
-      key = `${dDate.getFullYear()}`;
-    }
-
-    const current = map.get(key) || { amount: 0, sortDate: dDate };
-    map.set(key, {
-      amount: current.amount + (item.saldoAkhir || 0),
-      sortDate: current.sortDate,
-    });
-  });
-
-  const sortedEntries = Array.from(map.entries()).sort(
-    (a, b) => a[1].sortDate - b[1].sortDate,
+  const currentType = adminFilterState.type || "7days";
+  const dataset = filteredData !== null ? filteredData : filterReportsByDate(
+    allReportsGlobal,
+    currentType,
+    adminFilterState.startDate,
+    adminFilterState.endDate,
   );
 
-  let finalEntries = sortedEntries;
-  if (filter === "7hari" && sortedEntries.length > 7) {
-    finalEntries = sortedEntries.slice(-7);
-  }
+  let labels = [];
+  let chartData = [];
 
-  const labels = finalEntries.map((e) => e[0]);
-  const chartData = finalEntries.map((e) => e[1].amount);
+  if (currentType === "7days") {
+    // Generate 7 consecutive days [D-6 to Today] for clean continuous visual line
+    const dayNames = ["Min", "Sen", "Sel", "Rab", "Kam", "Jum", "Sab"];
+    const now = new Date();
+    const daysMap = [];
+
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(now.getTime() - i * 24 * 60 * 60 * 1000);
+      const dateStr = `${d.getDate().toString().padStart(2, "0")}/${(d.getMonth() + 1).toString().padStart(2, "0")}/${d.getFullYear()}`;
+      const dayLabel = `${dayNames[d.getDay()]}, ${d.getDate()}/${d.getMonth() + 1}`;
+      daysMap.push({ dateStr, label: dayLabel, amount: 0 });
+    }
+
+    dataset.forEach((item) => {
+      const entry = daysMap.find((d) => d.dateStr === item.tanggal);
+      if (entry) {
+        entry.amount += item.saldoAkhir || 0;
+      }
+    });
+
+    labels = daysMap.map((d) => d.label);
+    chartData = daysMap.map((d) => d.amount);
+  } else {
+    const map = new Map();
+    dataset.forEach((item) => {
+      const dDate = parseIndoDate(item.tanggal);
+      const key = item.tanggal || "-";
+
+      const current = map.get(key) || { amount: 0, sortDate: dDate };
+      map.set(key, {
+        amount: current.amount + (item.saldoAkhir || 0),
+        sortDate: current.sortDate,
+      });
+    });
+
+    const sortedEntries = Array.from(map.entries()).sort(
+      (a, b) => a[1].sortDate - b[1].sortDate,
+    );
+
+    labels = sortedEntries.map((e) => e[0]);
+    chartData = sortedEntries.map((e) => e[1].amount);
+  }
 
   const ctx = document.getElementById("salesChart");
   if (ctx) {
@@ -2722,12 +2731,14 @@ const updateAdminChart = () => {
           {
             label: "Pendapatan Bersih (Rp)",
             data: chartData,
-            backgroundColor: "rgba(230, 81, 0, 0.15)",
-            borderColor: "#E65100",
+            backgroundColor: "rgba(214, 40, 40, 0.12)",
+            borderColor: "#D62828",
             borderWidth: 2.5,
             pointBackgroundColor: "#D62828",
+            pointBorderColor: "#ffffff",
+            pointBorderWidth: 2,
             pointRadius: 4.5,
-            pointHoverRadius: 6,
+            pointHoverRadius: 6.5,
             fill: true,
             tension: 0.35,
           },
@@ -2738,8 +2749,15 @@ const updateAdminChart = () => {
         maintainAspectRatio: false,
         plugins: {
           legend: {
+            display: true,
             labels: {
               font: { family: "Inter", weight: "600" },
+              color: "#64748b",
+            },
+          },
+          tooltip: {
+            callbacks: {
+              label: (context) => `Pendapatan: Rp ${formatNumber(context.parsed.y)}`,
             },
           },
         },
@@ -2749,11 +2767,19 @@ const updateAdminChart = () => {
             ticks: {
               callback: (value) => "Rp " + formatNumber(value),
               font: { family: "Inter" },
+              color: "#64748b",
+            },
+            grid: {
+              color: "rgba(226, 232, 240, 0.6)",
             },
           },
           x: {
             ticks: {
               font: { family: "Inter" },
+              color: "#64748b",
+            },
+            grid: {
+              display: false,
             },
           },
         },
@@ -3152,25 +3178,26 @@ const setupHistoryFilterListeners = () => {
     btnResetKasir.addEventListener("click", window.resetKasirFilterAction);
   }
 
-  // Admin Filter
-  const adminFilterRange = document.getElementById("adminFilterRange");
-  const adminCustomWrap = document.getElementById("adminCustomDateWrap");
-  const btnApplyAdmin = document.getElementById("btnApplyAdminFilter");
-  const btnResetAdmin = document.getElementById("btnResetAdminFilter");
+  // Admin Unified Filter (Grafik & Database)
+  const adminUnifiedFilter = document.getElementById("adminUnifiedFilter");
+  const adminUnifiedCustomWrap = document.getElementById("adminUnifiedCustomDates");
+  const btnApplyAdmin = document.getElementById("btnApplyAdminUnifiedFilter");
+  const btnResetAdmin = document.getElementById("btnResetAdminUnifiedFilter");
 
-  if (adminFilterRange) {
-    adminFilterRange.addEventListener("change", (e) => {
+  if (adminUnifiedFilter) {
+    adminUnifiedFilter.addEventListener("change", (e) => {
       const val = e.target.value;
       if (val === "custom") {
-        adminCustomWrap?.classList.remove("hidden");
+        adminUnifiedCustomWrap?.classList.remove("hidden");
       } else {
-        adminCustomWrap?.classList.add("hidden");
+        adminUnifiedCustomWrap?.classList.add("hidden");
         adminFilterState.type = val;
         adminFilterState.startDate = "";
         adminFilterState.endDate = "";
         adminCurrentPage = 1;
+
         if (btnResetAdmin) {
-          if (val === "all") btnResetAdmin.classList.add("hidden");
+          if (val === "7days") btnResetAdmin.classList.add("hidden");
           else btnResetAdmin.classList.remove("hidden");
         }
         renderAdminDashboard();
@@ -3200,12 +3227,12 @@ const setupHistoryFilterListeners = () => {
   }
 
   window.resetAdminFilterAction = () => {
-    adminFilterState = { type: "all", startDate: "", endDate: "" };
-    if (adminFilterRange) {
-      adminFilterRange.value = "all";
-      adminFilterRange.dispatchEvent(new Event("change"));
+    adminFilterState = { type: "7days", startDate: "", endDate: "" };
+    if (adminUnifiedFilter) {
+      adminUnifiedFilter.value = "7days";
+      adminUnifiedFilter.dispatchEvent(new Event("change"));
     }
-    if (adminCustomWrap) adminCustomWrap.classList.add("hidden");
+    if (adminUnifiedCustomWrap) adminUnifiedCustomWrap.classList.add("hidden");
     const sInput = document.getElementById("adminDateStart");
     const eInput = document.getElementById("adminDateEnd");
     if (sInput) sInput.value = "";

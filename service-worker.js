@@ -1,4 +1,4 @@
-const CACHE_NAME = "pm-rekap-v3.7";
+const CACHE_NAME = "pm-rekap-v3.8";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -91,20 +91,31 @@ self.addEventListener("fetch", (event) => {
   );
 });
 
-// 4. Notification Click Event - Open or Focus PWA Window
+// 4. Notification Click Event - Open or Focus PWA Window & Open Single Report Detail
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
+  const reportId = event.notification.data ? event.notification.data.reportId : null;
   event.waitUntil(
     self.clients
       .matchAll({ type: "window", includeUncontrolled: true })
       .then((clientList) => {
         for (const client of clientList) {
           if (client.url && "focus" in client) {
-            return client.focus();
+            client.focus();
+            if (reportId) {
+              client.postMessage({ type: "OPEN_REPORT_DETAIL", reportId: reportId });
+            }
+            return;
           }
         }
         if (self.clients.openWindow) {
-          return self.clients.openWindow("/");
+          return self.clients.openWindow("/").then((client) => {
+            if (client && reportId) {
+              setTimeout(() => {
+                client.postMessage({ type: "OPEN_REPORT_DETAIL", reportId: reportId });
+              }, 1000);
+            }
+          });
         }
       })
   );

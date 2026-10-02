@@ -532,43 +532,53 @@
         </div>
       </div>
 
+      <!-- Unified Admin Period Filter (Grafik & Database Laporan) -->
+      <section class="card admin-unified-filter-card" style="margin-top: 20px">
+        <div class="unified-filter-header">
+          <div class="unified-filter-title-group">
+            <div class="unified-filter-icon-badge">
+              <i class="fa-solid fa-sliders"></i>
+            </div>
+            <div>
+              <h3>Filter Periode Data (Grafik &amp; Database)</h3>
+              <p class="section-desc">Menyaring tampilan grafik pendapatan dan tabel riwayat database secara bersamaan.</p>
+            </div>
+          </div>
+          <div class="unified-filter-controls">
+            <div class="filter-item">
+              <label for="adminUnifiedFilter"><i class="fa-regular fa-calendar"></i> Periode:</label>
+              <select id="adminUnifiedFilter" class="filter-select">
+                <option value="7days" selected>7 Hari Terakhir</option>
+                <option value="today">Hari Ini</option>
+                <option value="thisMonth">Bulan Ini</option>
+                <option value="all">Semua Waktu</option>
+                <option value="custom">Rentang Tanggal (Kustom)...</option>
+              </select>
+            </div>
+            <div id="adminUnifiedCustomDates" class="filter-custom-dates hidden">
+              <div class="filter-item">
+                <label for="adminDateStart">Dari:</label>
+                <input type="date" id="adminDateStart" class="filter-date-input" />
+              </div>
+              <div class="filter-item">
+                <label for="adminDateEnd">Sampai:</label>
+                <input type="date" id="adminDateEnd" class="filter-date-input" />
+              </div>
+              <button type="button" id="btnApplyAdminUnifiedFilter" class="btn btn-small btn-orange">
+                <i class="fa-solid fa-check"></i> Terapkan
+              </button>
+            </div>
+            <button type="button" id="btnResetAdminUnifiedFilter" class="btn btn-small btn-secondary btn-reset-filter hidden" title="Reset Filter ke 7 Hari Terakhir">
+              <i class="fa-solid fa-rotate-left"></i> Reset (7 Hari)
+            </button>
+          </div>
+        </div>
+      </section>
+
       <section class="card" style="margin-top: 20px">
         <div class="header-between admin-wrap-header">
           <h2><i class="fas fa-chart-line"></i> Grafik Pendapatan Bersih</h2>
-          <div class="admin-chart-dropdown">
-            <select id="chartFilterType" class="form-select">
-              <option value="7hari">7 Hari Terakhir</option>
-              <option value="mingguan">Per Minggu</option>
-              <option value="bulanan">Per Bulan</option>
-              <option value="tahun">Per Tahun</option>
-              <option value="custom">Custom Tanggal</option>
-            </select>
-          </div>
-        </div>
-        <div
-          id="chartFilterCustom"
-          class="grid-2 hidden"
-          style="
-            margin-bottom: 15px;
-            background: var(--bg-color);
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-          "
-        >
-          <div class="form-group">
-            <label>Dari Tanggal</label><input type="date" id="chartDateStart" />
-          </div>
-          <div class="form-group">
-            <label>Sampai Tanggal</label><input type="date" id="chartDateEnd" />
-          </div>
-          <button
-            id="btnApplyChartFilter"
-            class="btn btn-orange"
-            style="grid-column: 1 / -1"
-          >
-            Terapkan Filter Custom
-          </button>
+          <span class="badge-filter-status" id="chartFilterStatusBadge"><i class="fa-regular fa-calendar-check"></i> 7 Hari Terakhir</span>
         </div>
 
         <div class="chart-wrapper">
@@ -582,36 +592,7 @@
       >
         <div class="history-section-header">
           <h2><i class="fas fa-database"></i> Database Laporan Keseluruhan</h2>
-          <div class="history-filter-bar">
-            <div class="filter-controls-group">
-              <div class="filter-item">
-                <label for="adminFilterRange">Periode:</label>
-                <select id="adminFilterRange" class="filter-select">
-                  <option value="all">Semua Waktu</option>
-                  <option value="today">Hari Ini</option>
-                  <option value="7days">7 Hari Terakhir</option>
-                  <option value="thisMonth">Bulan Ini</option>
-                  <option value="custom">Rentang Tanggal (Kustom)...</option>
-                </select>
-              </div>
-              <div id="adminCustomDateWrap" class="filter-custom-dates hidden">
-                <div class="filter-item">
-                  <label for="adminDateStart">Dari:</label>
-                  <input type="date" id="adminDateStart" class="filter-date-input" />
-                </div>
-                <div class="filter-item">
-                  <label for="adminDateEnd">Sampai:</label>
-                  <input type="date" id="adminDateEnd" class="filter-date-input" />
-                </div>
-                <button type="button" id="btnApplyAdminFilter" class="btn btn-small btn-orange">
-                  <i class="fa-solid fa-check"></i> Terapkan
-                </button>
-              </div>
-              <button type="button" id="btnResetAdminFilter" class="btn btn-small btn-secondary btn-reset-filter hidden" title="Reset Filter">
-                <i class="fa-solid fa-rotate-left"></i> Reset
-              </button>
-            </div>
-          </div>
+          <span class="badge-filter-status" id="tableFilterStatusBadge"><i class="fa-regular fa-calendar-check"></i> 7 Hari Terakhir</span>
         </div>
         <div id="adminHistoryContainer" class="history-container"></div>
       </section>
