@@ -1003,14 +1003,16 @@ const userDropdownAvatar = document.getElementById("userDropdownAvatar");
 const userDropdownName = document.getElementById("userDropdownName");
 const userDropdownBadge = document.getElementById("userDropdownBadge");
 
-function hideAppInitLoader() {
+function hideAppInitLoader(delay = 400) {
   const loader = document.getElementById("appInitLoader");
   if (loader) {
-    loader.classList.add("fade-out");
     setTimeout(() => {
-      loader.style.display = "none";
-      document.documentElement.classList.remove("has-saved-session");
-    }, 160);
+      loader.classList.add("fade-out");
+      setTimeout(() => {
+        loader.style.display = "none";
+        document.documentElement.classList.remove("has-saved-session");
+      }, 240);
+    }, delay);
   }
 }
 window.hideAppInitLoader = hideAppInitLoader;
