@@ -563,7 +563,7 @@ window.clearAllNotifications = () => {
 async function sendNativeNotification(title, body, tag = "pm-rekap", type = "system", reportId = null) {
   playNotificationSound();
   addNotificationHistory(title, body, type, reportId);
-  showToast(title);
+  showToast(title, reportId, body);
 
   if (!("Notification" in window)) return;
 
@@ -3073,17 +3073,56 @@ window.closeModal = (id) => {
   }
 };
 
-const showToast = (msg) => {
+let toastTimer = null;
+
+const showToast = (msg, reportId = null, subtext = null) => {
   const toast = document.getElementById("toast");
   if (!toast) return;
-  const cleanMsg = msg ? String(msg).replace(/^[✅✨🎉🔔]\s*/, "") : "";
-  toast.innerHTML = `<i class="fa-solid fa-circle-check text-green"></i> <span>${cleanMsg}</span>`;
+
+  clearTimeout(toastTimer);
+
+  const cleanMsg = msg ? String(msg).replace(/^[✅✨🎉🔔🍗✏️]\s*/, "") : "";
+
+  if (reportId) {
+    toast.dataset.reportId = String(reportId);
+    toast.classList.add("clickable-toast");
+    toast.innerHTML = `
+      <div class="toast-inner-clickable">
+        <i class="fa-solid fa-file-invoice-dollar text-primary toast-lead-icon"></i>
+        <div class="toast-body-content">
+          <strong class="toast-main-title">${cleanMsg}</strong>
+          ${subtext ? `<span class="toast-subtext">${subtext}</span>` : ""}
+        </div>
+        <span class="toast-tap-hint"><i class="fa-solid fa-chevron-right"></i></span>
+      </div>
+    `;
+    toast.onclick = (e) => {
+      e.stopPropagation();
+      toast.classList.remove("show");
+      setTimeout(() => toast.classList.add("hidden"), 200);
+      if (reportId) {
+        openNotificationDetail(null, reportId);
+      }
+    };
+  } else {
+    delete toast.dataset.reportId;
+    toast.classList.remove("clickable-toast");
+    toast.innerHTML = `<i class="fa-solid fa-circle-check text-green"></i> <span>${cleanMsg}</span>`;
+    toast.onclick = (e) => {
+      e.stopPropagation();
+      toast.classList.remove("show");
+      setTimeout(() => toast.classList.add("hidden"), 200);
+    };
+  }
+
   toast.classList.remove("hidden");
+  void toast.offsetWidth; // Trigger reflow for animation
   toast.classList.add("show");
-  setTimeout(() => {
+
+  toastTimer = setTimeout(() => {
     toast.classList.remove("show");
     setTimeout(() => toast.classList.add("hidden"), 300);
-  }, 3200);
+  }, reportId ? 5000 : 3200);
 };
 
 document.getElementById("btnPreview").addEventListener("click", async () => {
