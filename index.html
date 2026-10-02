@@ -85,6 +85,13 @@
                 <span id="menuInstallText">Install Aplikasi</span>
               </div>
             </button>
+            <button type="button" class="user-dropdown-item" id="menuAppVersion" onclick="showAppChangelogModal(event)">
+              <div class="item-left">
+                <i class="fa-solid fa-sparkles text-gold"></i>
+                <span>Versi Aplikasi</span>
+              </div>
+              <span class="version-badge">v2.4.0</span>
+            </button>
             <div class="user-dropdown-divider"></div>
             <button type="button" class="user-dropdown-item text-danger" id="menuLogout" onclick="handleUserLogout(event)">
               <div class="item-left">
@@ -651,6 +658,67 @@
         <p id="dialogMessage" class="dialog-message">Pesan...</p>
         <div class="dialog-actions" id="dialogActions">
           <!-- Dynamic Action Buttons rendered via script.js -->
+        </div>
+      </div>
+    </div>
+
+    <!-- App Version & Changelog Modal -->
+    <div id="changelogModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content changelog-modal-card">
+        <div class="modal-header">
+          <div class="changelog-modal-title">
+            <i class="fa-solid fa-sparkles text-gold"></i>
+            <h2>Pembaruan Sistem PM Rekap</h2>
+          </div>
+          <span class="close-modal" onclick="closeModal('changelogModal')">&times;</span>
+        </div>
+        <div class="modal-body changelog-body">
+          <div class="changelog-badge-bar">
+            <span class="badge-ver">Versi 2.4.0</span>
+            <span class="badge-date">Oktober 2026</span>
+          </div>
+          <ul class="changelog-list">
+            <li>
+              <div class="cl-icon"><i class="fa-solid fa-bell text-gold"></i></div>
+              <div class="cl-text">
+                <strong>Notifikasi Realtime Laporan</strong>
+                <p>Notifikasi otomatis pada akun Owner saat ada laporan baru dari Kasir, serta notifikasi pada Kasir saat laporan berhasil dikirim.</p>
+              </div>
+            </li>
+            <li>
+              <div class="cl-icon"><i class="fa-solid fa-mobile-screen text-green"></i></div>
+              <div class="cl-text">
+                <strong>Instalasi PWA 1-Klik Cepat</strong>
+                <p>Mendukung Progressive Web App di Desktop (Chrome/Edge/Windows/Mac), Android, dan iOS tanpa loading lama.</p>
+              </div>
+            </li>
+            <li>
+              <div class="cl-icon"><i class="fa-solid fa-sliders text-red"></i></div>
+              <div class="cl-text">
+                <strong>Custom UI Dropdown &amp; Filter Waktu</strong>
+                <p>Semua dropdown select kini menggunakan UI modern elegan dan dilengkapi filter rentang waktu interaktif.</p>
+              </div>
+            </li>
+            <li>
+              <div class="cl-icon"><i class="fa-solid fa-list-ol text-blue"></i></div>
+              <div class="cl-text">
+                <strong>Paginasi 10 Data Riwayat</strong>
+                <p>Tampilan riwayat transaksi database terbagi rapi dengan navigasi halaman per 10 data.</p>
+              </div>
+            </li>
+            <li>
+              <div class="cl-icon"><i class="fa-solid fa-moon text-purple"></i></div>
+              <div class="cl-text">
+                <strong>Mode Gelap &amp; Terang Otomatis</strong>
+                <p>Pilihan tema Gelap / Terang realtime yang tersimpan permanen di perangkat Anda.</p>
+              </div>
+            </li>
+          </ul>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-primary btn-full" onclick="closeModal('changelogModal')">
+            <i class="fa-solid fa-check"></i> Mengerti
+          </button>
         </div>
       </div>
     </div>

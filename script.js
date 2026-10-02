@@ -183,6 +183,83 @@ const useLocalStorage = () => {
   onDataChanged();
 };
 
+// --- NOTIFICATION & CHIME AUDIO SYSTEM ---
+function playNotificationSound() {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const now = ctx.currentTime;
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(587.33, now); // D5
+    osc.frequency.setValueAtTime(880, now + 0.09); // A5
+
+    gain.gain.setValueAtTime(0.25, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.35);
+  } catch (_) {}
+}
+
+async function requestNotificationPermission() {
+  if ("Notification" in window && Notification.permission === "default") {
+    try {
+      await Notification.requestPermission();
+    } catch (_) {}
+  }
+}
+
+async function sendNativeNotification(title, body, tag = "pm-rekap") {
+  playNotificationSound();
+
+  if (!("Notification" in window)) return;
+
+  if (Notification.permission === "default") {
+    try {
+      await Notification.requestPermission();
+    } catch (_) {}
+  }
+
+  if (Notification.permission === "granted") {
+    try {
+      if ("serviceWorker" in navigator && navigator.serviceWorker.ready) {
+        const reg = await navigator.serviceWorker.ready;
+        reg.showNotification(title, {
+          body: body,
+          icon: "/icon-192.png",
+          badge: "/favicon-32.png",
+          tag: tag,
+          vibrate: [200, 100, 200],
+          data: { url: "/" },
+        });
+      } else {
+        const n = new Notification(title, {
+          body: body,
+          icon: "/icon-192.png",
+          tag: tag,
+        });
+        n.onclick = function () {
+          window.focus();
+          this.close();
+        };
+      }
+    } catch (err) {
+      console.warn("Notification error:", err);
+    }
+  }
+}
+
+let knownReportIds = new Set();
+let isInitialRealtimeLoad = true;
+
 const setupRealtimeListener = () => {
   if (!db) return;
 
@@ -191,14 +268,30 @@ const setupRealtimeListener = () => {
     "value",
     (snapshot) => {
       const data = snapshot.val();
+      const currentList = [];
 
-      allReportsGlobal = [];
       if (data) {
-        allReportsGlobal = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
+        Object.keys(data).forEach((key) => {
+          const report = { id: key, ...data[key] };
+          currentList.push(report);
+
+          // Trigger notification for Owner when a new report arrives from Kasir
+          if (!isInitialRealtimeLoad && !knownReportIds.has(key)) {
+            if (currentAppRole === "admin") {
+              sendNativeNotification(
+                "🍗 Laporan Kasir Baru Masuk!",
+                `Kasir ${report.kasir || "Shift"} mengirim laporan baru (${report.tanggal || "Hari ini"}) • Saldo: Rp ${formatNumber(report.saldoAkhir || 0)}`,
+                "admin-report-received",
+              );
+              showToast(`🍗 Laporan baru masuk dari ${report.kasir || "Kasir"}!`);
+            }
+          }
+        });
       }
+
+      allReportsGlobal = currentList;
+      knownReportIds = new Set(allReportsGlobal.map((r) => r.id));
+      isInitialRealtimeLoad = false;
       firebaseDataLoaded = true;
 
       console.log(
@@ -316,7 +409,14 @@ const userDropdownAvatar = document.getElementById("userDropdownAvatar");
 const userDropdownName = document.getElementById("userDropdownName");
 const userDropdownBadge = document.getElementById("userDropdownBadge");
 
+let currentAppRole = null;
+
 const switchView = (role) => {
+  currentAppRole = role;
+  window.scrollTo(0, 0);
+  document.documentElement.scrollTop = 0;
+  document.body.scrollTop = 0;
+
   viewLogin.classList.add("hidden");
   viewKasir.classList.add("hidden");
   viewKasirHistory.classList.add("hidden");
@@ -328,6 +428,9 @@ const switchView = (role) => {
     userAccountWrapper.classList.remove("hidden");
     userAccountWrapper.classList.remove("open");
   }
+
+  // Request native notification permission if supported
+  requestNotificationPermission();
 
   if (role === "kasir") {
     viewKasir.classList.remove("hidden");
@@ -360,6 +463,16 @@ const switchView = (role) => {
   if (typeof initCustomSelects === "function") {
     initCustomSelects();
   }
+
+  window.scrollTo(0, 0);
+};
+
+window.showAppChangelogModal = (e) => {
+  if (e) e.stopPropagation();
+  const wrapper = document.getElementById("userAccountWrapper");
+  if (wrapper) wrapper.classList.remove("open");
+  const modal = document.getElementById("changelogModal");
+  if (modal) modal.classList.remove("hidden");
 };
 
 const handleLogout = async () => {
@@ -1002,7 +1115,12 @@ document.getElementById("btnSimpanKirim").addEventListener("click", async () => 
         .set(dataToSave)
         .then(() => {
           document.getElementById("loading").classList.add("hidden");
-          showToast("✅ Data Berhasil Disimpan!");
+          showToast("✅ Laporan Berhasil Dikirim!");
+          sendNativeNotification(
+            "Laporan Berhasil Terkirim! ✅",
+            `Laporan Kasir ${dataToSave.kasir || ""} tanggal ${dataToSave.tanggal} (Total: Rp ${formatNumber(dataToSave.penjualan)}) berhasil tersimpan ke sistem.`,
+            "kasir-sent",
+          );
           resetForm();
           window.open(
             `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`,
@@ -1038,7 +1156,12 @@ document.getElementById("btnSimpanKirim").addEventListener("click", async () => 
       document.getElementById("view-kasir-history").classList.remove("hidden");
       loadKasirHistory();
     } else {
-      showToast("✅ Data Berhasil Disimpan!");
+      showToast("✅ Laporan Berhasil Dikirim!");
+      sendNativeNotification(
+        "Laporan Berhasil Terkirim! ✅",
+        `Laporan Kasir ${dataToSave.kasir || ""} tanggal ${dataToSave.tanggal} berhasil tersimpan ke sistem lokal.`,
+        "kasir-sent",
+      );
       resetForm();
       window.open(
         `https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`,
