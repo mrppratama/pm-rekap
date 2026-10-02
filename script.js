@@ -449,11 +449,13 @@ const setupRealtimeListener = () => {
 
           // Trigger notification for Owner when a new report arrives from Kasir
           if (!isInitialRealtimeLoad && !knownReportIds.has(key)) {
-            if (currentAppRole === "admin") {
+            const activeRole = currentAppRole || localStorage.getItem("pm_logged_role");
+            if (activeRole === "admin") {
               sendNativeNotification(
                 "🍗 Laporan Kasir Baru Masuk!",
-                `Kasir ${report.kasir || "Shift"} mengirim laporan baru (${report.tanggal || "Hari ini"}) • Saldo: Rp ${formatNumber(report.saldoAkhir || 0)}`,
+                `Kasir ${report.kasir || "Shift"} mengirim laporan baru (${report.tanggal || "Hari ini"}) • Saldo Bersih: Rp ${formatNumber(report.saldoAkhir || 0)}`,
                 "admin-report-received",
+                "report-in",
               );
               showToast(`🍗 Laporan baru masuk dari ${report.kasir || "Kasir"}!`);
             }
@@ -1722,6 +1724,7 @@ document.getElementById("btnSimpanKirim").addEventListener("click", async () => 
             "Laporan Berhasil Terkirim! ✅",
             `Laporan Kasir ${dataToSave.kasir || ""} tanggal ${dataToSave.tanggal} (Total: Rp ${formatNumber(dataToSave.penjualan)}) berhasil tersimpan ke sistem.`,
             "kasir-sent",
+            "report-out",
           );
           resetForm();
           window.open(
@@ -1763,6 +1766,7 @@ document.getElementById("btnSimpanKirim").addEventListener("click", async () => 
         "Laporan Berhasil Terkirim! ✅",
         `Laporan Kasir ${dataToSave.kasir || ""} tanggal ${dataToSave.tanggal} berhasil tersimpan ke sistem lokal.`,
         "kasir-sent",
+        "report-out",
       );
       resetForm();
       window.open(
