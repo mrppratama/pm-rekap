@@ -217,8 +217,139 @@ async function requestNotificationPermission() {
   }
 }
 
-async function sendNativeNotification(title, body, tag = "pm-rekap") {
+// --- NOTIFICATION CENTER SYSTEM ---
+const getNotificationHistory = () => {
+  try {
+    return JSON.parse(localStorage.getItem("pm_notifications") || "[]");
+  } catch (_) {
+    return [];
+  }
+};
+
+const saveNotificationHistory = (list) => {
+  try {
+    localStorage.setItem("pm_notifications", JSON.stringify(list.slice(0, 40)));
+  } catch (_) {}
+};
+
+function addNotificationHistory(title, message, type = "system") {
+  const list = getNotificationHistory();
+  const now = new Date();
+  const timeStr =
+    now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) +
+    " • " +
+    now.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+
+  const newItem = {
+    id: Date.now().toString(),
+    title,
+    message,
+    type, // 'report-in', 'report-out', 'system'
+    time: timeStr,
+    unread: true,
+  };
+
+  list.unshift(newItem);
+  saveNotificationHistory(list);
+  updateNotificationBadges();
+}
+
+function updateNotificationBadges() {
+  const list = getNotificationHistory();
+  const unreadCount = list.filter((n) => n.unread).length;
+
+  const notifDropdownBadge = document.getElementById("notifDropdownBadge");
+  const headerNotifDot = document.getElementById("headerNotifDot");
+
+  if (notifDropdownBadge) {
+    if (unreadCount > 0) {
+      notifDropdownBadge.textContent = unreadCount > 9 ? "9+" : unreadCount;
+      notifDropdownBadge.classList.remove("hidden");
+    } else {
+      notifDropdownBadge.classList.add("hidden");
+    }
+  }
+
+  if (headerNotifDot) {
+    if (unreadCount > 0) {
+      headerNotifDot.classList.remove("hidden");
+    } else {
+      headerNotifDot.classList.add("hidden");
+    }
+  }
+}
+
+function renderNotificationList() {
+  const container = document.getElementById("notifListContainer");
+  if (!container) return;
+
+  const list = getNotificationHistory();
+
+  if (!list || list.length === 0) {
+    container.innerHTML = `
+      <div class="notif-empty-state">
+        <i class="fa-regular fa-bell-slash"></i>
+        <p>Belum ada notifikasi baru</p>
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = list
+    .map((item) => {
+      const iconClass =
+        item.type === "report-in"
+          ? "fa-solid fa-file-invoice-dollar"
+          : item.type === "report-out"
+            ? "fa-solid fa-paper-plane"
+            : "fa-solid fa-bell";
+
+      const iconType = item.type || "system";
+
+      return `
+        <div class="notif-item ${item.unread ? "unread" : ""}">
+          <div class="notif-item-icon ${iconType}">
+            <i class="${iconClass}"></i>
+          </div>
+          <div class="notif-item-content">
+            <div class="notif-item-title">
+              <span>${item.title}</span>
+            </div>
+            <p class="notif-item-desc">${item.message}</p>
+            <span class="notif-item-time">${item.time}</span>
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+window.showNotificationCenterModal = (e) => {
+  if (e) e.stopPropagation();
+  const wrapper = document.getElementById("userAccountWrapper");
+  if (wrapper) wrapper.classList.remove("open");
+
+  const modal = document.getElementById("notifCenterModal");
+  if (modal) modal.classList.remove("hidden");
+
+  // Mark all notifications as read
+  const list = getNotificationHistory();
+  list.forEach((n) => (n.unread = false));
+  saveNotificationHistory(list);
+  updateNotificationBadges();
+  renderNotificationList();
+};
+
+window.clearAllNotifications = () => {
+  saveNotificationHistory([]);
+  updateNotificationBadges();
+  renderNotificationList();
+  showToast("Notifikasi telah dibersihkan");
+};
+
+async function sendNativeNotification(title, body, tag = "pm-rekap", type = "system") {
   playNotificationSound();
+  addNotificationHistory(title, body, type);
 
   if (!("Notification" in window)) return;
 
@@ -413,6 +544,10 @@ let currentAppRole = null;
 
 const switchView = (role) => {
   currentAppRole = role;
+  try {
+    localStorage.setItem("pm_logged_role", role);
+  } catch (_) {}
+
   window.scrollTo(0, 0);
   document.documentElement.scrollTop = 0;
   document.body.scrollTop = 0;
@@ -464,6 +599,7 @@ const switchView = (role) => {
     initCustomSelects();
   }
 
+  updateNotificationBadges();
   window.scrollTo(0, 0);
 };
 
@@ -485,6 +621,10 @@ const handleLogout = async () => {
     "fa-solid fa-arrow-right-from-bracket",
   );
   if (confirmed) {
+    try {
+      localStorage.removeItem("pm_logged_role");
+    } catch (_) {}
+
     if (window.isEditMode) exitEditMode();
     if (userAccountWrapper) {
       userAccountWrapper.classList.add("hidden");
@@ -2531,8 +2671,15 @@ window.addEventListener("DOMContentLoaded", () => {
   setupHistoryFilterListeners();
   initCustomSelects();
   initPWA();
+  updateNotificationBadges();
 
   const isDark = localStorage.getItem("pm_darkmode") === "true";
   if (isDark) document.body.classList.add("dark-mode");
   updateThemeIcons(isDark);
+
+  // Restore active user session on PWA/browser refresh
+  const savedRole = localStorage.getItem("pm_logged_role");
+  if (savedRole === "kasir" || savedRole === "admin") {
+    switchView(savedRole);
+  }
 });

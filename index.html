@@ -61,6 +61,7 @@
               <span class="user-account-name" id="userAccountName">Kasir</span>
               <span class="user-account-role" id="userAccountRole">Aktif</span>
             </div>
+            <span class="header-notif-dot hidden" id="headerNotifDot"></span>
             <i class="fa-solid fa-chevron-down user-chevron"></i>
           </button>
           
@@ -73,6 +74,13 @@
               </div>
             </div>
             <div class="user-dropdown-divider"></div>
+            <button type="button" class="user-dropdown-item" id="menuNotifications" onclick="showNotificationCenterModal(event)">
+              <div class="item-left">
+                <i class="fa-solid fa-bell text-gold"></i>
+                <span>Notifikasi</span>
+              </div>
+              <span class="notif-pill-badge hidden" id="notifDropdownBadge">0</span>
+            </button>
             <button type="button" class="user-dropdown-item" id="menuToggleTheme" onclick="handleUserThemeToggle(event)">
               <div class="item-left">
                 <i class="fas fa-moon" id="menuThemeIcon"></i>
@@ -718,6 +726,34 @@
         <div class="modal-actions">
           <button type="button" class="btn btn-primary btn-full" onclick="closeModal('changelogModal')">
             <i class="fa-solid fa-check"></i> Mengerti
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notification Center Modal -->
+    <div id="notifCenterModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content notif-modal-card">
+        <div class="modal-header">
+          <div class="notif-modal-header-title">
+            <i class="fa-solid fa-bell text-gold"></i>
+            <h2>Pusat Notifikasi</h2>
+          </div>
+          <div class="notif-header-actions">
+            <button type="button" class="btn-clean-action" id="btnClearAllNotifs" onclick="clearAllNotifications()">
+              <i class="fa-solid fa-trash-can"></i> Bersihkan
+            </button>
+            <span class="close-modal" onclick="closeModal('notifCenterModal')">&times;</span>
+          </div>
+        </div>
+        <div class="modal-body notif-modal-body">
+          <div id="notifListContainer" class="notif-list-container">
+            <!-- Dynamic notifications -->
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary btn-full" onclick="closeModal('notifCenterModal')">
+            <i class="fa-solid fa-check"></i> Tutup
           </button>
         </div>
       </div>
