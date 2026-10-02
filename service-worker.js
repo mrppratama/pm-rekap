@@ -1,32 +1,30 @@
-const CACHE_NAME = "pm-rekap-v1.2";
+const CACHE_NAME = "pm-rekap-v2.1";
 const ASSETS_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./style.css",
-  "./script.js",
-  "./firebase-config.js",
-  "./favicon-32.png",
-  "./favicon.png",
-  "./icon-192.png",
-  "./icon-512.png",
-  "./apple-touch-icon.png",
-  "./manifest.json",
-  "https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap",
-  "https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  "/",
+  "/index.html",
+  "/style.css",
+  "/script.js",
+  "/firebase-config.js",
+  "/favicon.png",
+  "/favicon-32.png",
+  "/icon-192.png",
+  "/icon-512.png",
+  "/apple-touch-icon.png",
+  "/manifest.json"
 ];
 
 // 1. Install Event - Cache Static Assets
 self.addEventListener("install", (event) => {
+  self.skipWaiting();
   event.waitUntil(
     caches
       .open(CACHE_NAME)
       .then((cache) => cache.addAll(ASSETS_TO_CACHE))
-      .then(() => self.skipWaiting())
       .catch((err) => console.warn("SW install cache warning:", err))
   );
 });
 
-// 2. Activate Event - Clean Up Old Caches
+// 2. Activate Event - Clean Up Old Caches & Take Control Immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches
@@ -44,43 +42,51 @@ self.addEventListener("activate", (event) => {
   );
 });
 
-// 3. Fetch Event - Network First with Cache Fallback for HTML/Data, Cache First for Static
+// 3. Fetch Event
 self.addEventListener("fetch", (event) => {
   const request = event.request;
+  const url = new URL(request.url);
 
   // Skip non-GET requests or Firebase DB websocket/HTTP calls
   if (
     request.method !== "GET" ||
-    request.url.includes("firebaseio.com") ||
-    request.url.includes("google.com/recaptcha") ||
-    request.url.startsWith("chrome-extension://")
+    url.hostname.includes("firebaseio.com") ||
+    url.hostname.includes("googleapis.com") ||
+    url.hostname.includes("gstatic.com") ||
+    url.protocol.startsWith("chrome-extension")
   ) {
     return;
   }
 
-  // Network-First strategy with Cache Fallback
+  // Navigation: Network first, fallback to cached index.html
+  if (request.mode === "navigate") {
+    event.respondWith(
+      fetch(request).catch(() => {
+        return caches.match("/index.html") || caches.match("/");
+      })
+    );
+    return;
+  }
+
+  // Static Assets: Cache first with network fallback & background cache update
   event.respondWith(
-    fetch(request)
-      .then((response) => {
-        // If response is valid, clone and update cache
-        if (response && response.status === 200 && response.type === "basic") {
-          const responseToCache = response.clone();
+    caches.match(request).then((cachedResponse) => {
+      if (cachedResponse) {
+        return cachedResponse;
+      }
+      return fetch(request).then((networkResponse) => {
+        if (
+          networkResponse &&
+          networkResponse.status === 200 &&
+          (networkResponse.type === "basic" || networkResponse.type === "cors")
+        ) {
+          const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(request, responseToCache);
           });
         }
-        return response;
-      })
-      .catch(() => {
-        // Fallback to cache if offline
-        return caches.match(request).then((cachedResponse) => {
-          if (cachedResponse) {
-            return cachedResponse;
-          }
-          if (request.mode === "navigate") {
-            return caches.match("./index.html");
-          }
-        });
-      })
+        return networkResponse;
+      });
+    })
   );
 });

@@ -2394,6 +2394,7 @@ function initPWA() {
       .register("./service-worker.js")
       .then((reg) => {
         console.log("✅ Service Worker PWA terdaftar:", reg.scope);
+        reg.update();
       })
       .catch((err) => {
         console.warn("⚠️ Gagal mendaftarkan Service Worker:", err);
