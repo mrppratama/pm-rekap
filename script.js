@@ -431,6 +431,7 @@ window.openNotificationDetail = (notifId, reportId, e) => {
     document.getElementById("view-login")?.classList.add("hidden");
     document.getElementById("view-kasir")?.classList.add("hidden");
     document.getElementById("view-kasir-history")?.classList.add("hidden");
+    document.getElementById("view-admin-products")?.classList.add("hidden");
     document.getElementById("view-admin")?.classList.remove("hidden");
     renderAdminDashboard();
 
@@ -459,6 +460,7 @@ window.openNotificationDetail = (notifId, reportId, e) => {
     document.getElementById("view-login")?.classList.add("hidden");
     document.getElementById("view-kasir")?.classList.add("hidden");
     document.getElementById("view-admin")?.classList.add("hidden");
+    document.getElementById("view-admin-products")?.classList.add("hidden");
     document.getElementById("view-kasir-history")?.classList.remove("hidden");
     loadKasirHistory();
 
@@ -536,7 +538,7 @@ async function sendNativeNotification(title, body, tag = "pm-rekap", type = "sys
   }
 }
 
-let knownReportIds = new Set();
+let knownReportTimestamps = new Map();
 let isInitialRealtimeLoad = true;
 
 const setupRealtimeListener = () => {
@@ -554,25 +556,38 @@ const setupRealtimeListener = () => {
           const report = { id: key, ...data[key] };
           currentList.push(report);
 
-          // Trigger notification for Owner when a new report arrives from Kasir
-          if (!isInitialRealtimeLoad && !knownReportIds.has(key)) {
+          // Trigger notification for Owner when a new report arrives or an existing report is updated
+          if (!isInitialRealtimeLoad) {
             const activeRole = currentAppRole || localStorage.getItem("pm_logged_role");
             if (activeRole === "admin") {
-              sendNativeNotification(
-                "🍗 Laporan Kasir Baru Masuk!",
-                `Kasir ${report.kasir || "Shift"} mengirim laporan baru (${report.tanggal || "Hari ini"}) • Saldo Bersih: Rp ${formatNumber(report.saldoAkhir || 0)}`,
-                "admin-report-received",
-                "report-in",
-                key,
-              );
-              showToast(`🍗 Laporan baru masuk dari ${report.kasir || "Kasir"}!`);
+              if (!knownReportTimestamps.has(key)) {
+                // New Report
+                sendNativeNotification(
+                  "🍗 Laporan Kasir Baru Masuk!",
+                  `Kasir ${report.kasir || "Shift"} mengirim laporan baru (${report.tanggal || "Hari ini"}) • Saldo Bersih: Rp ${formatNumber(report.saldoAkhir || 0)}`,
+                  "admin-report-received",
+                  "report-in",
+                  key,
+                );
+                showToast(`🍗 Laporan baru masuk dari ${report.kasir || "Kasir"}!`);
+              } else if (knownReportTimestamps.get(key) !== report.timestamp) {
+                // Report Updated / Edited
+                sendNativeNotification(
+                  "✏️ Laporan Kasir Diperbarui!",
+                  `Kasir ${report.kasir || "Shift"} memperbarui laporan (${report.tanggal || "Hari ini"}) • Saldo Bersih: Rp ${formatNumber(report.saldoAkhir || 0)}`,
+                  "admin-report-updated",
+                  "report-in",
+                  key,
+                );
+                showToast(`✏️ Laporan ${report.kasir || "Kasir"} diperbarui!`);
+              }
             }
           }
         });
       }
 
       allReportsGlobal = currentList;
-      knownReportIds = new Set(allReportsGlobal.map((r) => r.id));
+      knownReportTimestamps = new Map(allReportsGlobal.map((r) => [r.id, r.timestamp]));
       isInitialRealtimeLoad = false;
       firebaseDataLoaded = true;
 
@@ -918,6 +933,12 @@ const onDataChanged = () => {
   ) {
     renderAdminDashboard();
   }
+
+  if (
+    !document.getElementById("view-admin-products")?.classList.contains("hidden")
+  ) {
+    renderAdminProductGrid();
+  }
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -990,6 +1011,7 @@ const viewLogin = document.getElementById("view-login");
 const viewKasir = document.getElementById("view-kasir");
 const viewKasirHistory = document.getElementById("view-kasir-history");
 const viewAdmin = document.getElementById("view-admin");
+const viewAdminProducts = document.getElementById("view-admin-products");
 const mainTitle = document.getElementById("mainTitle");
 const subTitle = document.getElementById("subTitle");
 const appHeader = document.getElementById("appHeader");
@@ -1020,7 +1042,9 @@ window.hideAppInitLoader = hideAppInitLoader;
 const switchView = (role) => {
   currentAppRole = role;
   try {
-    localStorage.setItem("pm_logged_role", role);
+    if (role === "admin" || role === "kasir") {
+      localStorage.setItem("pm_logged_role", role);
+    }
   } catch (_) {}
 
   window.scrollTo(0, 0);
@@ -1031,8 +1055,11 @@ const switchView = (role) => {
   viewKasir.classList.add("hidden");
   viewKasirHistory.classList.add("hidden");
   viewAdmin.classList.add("hidden");
+  if (viewAdminProducts) viewAdminProducts.classList.add("hidden");
   loginBg.classList.remove("active");
   appHeader.style.backgroundColor = "#D62828";
+
+  const menuKelolaProduk = document.getElementById("menuKelolaProduk");
 
   if (userAccountWrapper) {
     userAccountWrapper.classList.remove("hidden");
@@ -1046,6 +1073,7 @@ const switchView = (role) => {
   requestNotificationPermission();
 
   if (role === "kasir") {
+    if (menuKelolaProduk) menuKelolaProduk.classList.add("hidden");
     viewKasir.classList.remove("hidden");
     mainTitle.textContent = "PM Fried Chicken Kendayakan";
     subTitle.textContent = "Sistem Rekap Kasir";
@@ -1059,6 +1087,7 @@ const switchView = (role) => {
 
     setupDateTime();
   } else if (role === "admin") {
+    if (menuKelolaProduk) menuKelolaProduk.classList.remove("hidden");
     viewAdmin.classList.remove("hidden");
     mainTitle.textContent = "Dashboard Owner";
     subTitle.textContent = "Statistik & Database";
@@ -1071,6 +1100,20 @@ const switchView = (role) => {
     if (userDropdownBadge) userDropdownBadge.textContent = "Super Admin";
 
     renderAdminDashboard();
+  } else if (role === "admin-products") {
+    if (menuKelolaProduk) menuKelolaProduk.classList.remove("hidden");
+    if (viewAdminProducts) viewAdminProducts.classList.remove("hidden");
+    mainTitle.textContent = "Kelola Menu & Harga";
+    subTitle.textContent = "Pengaturan Produk & Harga Satuan";
+
+    if (userAvatarText) userAvatarText.textContent = "A";
+    if (userDropdownAvatar) userDropdownAvatar.textContent = "A";
+    if (userAccountName) userAccountName.textContent = "Owner";
+    if (userAccountRole) userAccountRole.textContent = "Super Admin";
+    if (userDropdownName) userDropdownName.textContent = "Owner / Admin";
+    if (userDropdownBadge) userDropdownBadge.textContent = "Super Admin";
+
+    renderAdminProductGrid();
   }
 
   if (typeof initCustomSelects === "function") {
@@ -1079,6 +1122,17 @@ const switchView = (role) => {
 
   updateNotificationBadges();
   window.scrollTo(0, 0);
+};
+window.switchView = switchView;
+
+window.handleUserKelolaProduk = (e) => {
+  if (e) {
+    if (typeof e.stopPropagation === "function") e.stopPropagation();
+    if (typeof e.preventDefault === "function") e.preventDefault();
+  }
+  const wrapper = document.getElementById("userAccountWrapper");
+  if (wrapper) wrapper.classList.remove("open");
+  switchView("admin-products");
 };
 
 window.showAppChangelogModal = (e) => {
@@ -1118,6 +1172,7 @@ const handleLogout = async () => {
     viewKasir.classList.add("hidden");
     viewKasirHistory.classList.add("hidden");
     viewAdmin.classList.add("hidden");
+    if (viewAdminProducts) viewAdminProducts.classList.add("hidden");
     loginBg.classList.add("active");
 
     appHeader.style.backgroundColor = "#D62828";
@@ -1127,6 +1182,14 @@ const handleLogout = async () => {
     showToast("Anda telah keluar akun");
   }
 };
+
+const loginPinInput = document.getElementById("loginPin");
+if (loginPinInput) {
+  // Hanya menerima input angka 0-9
+  loginPinInput.addEventListener("input", function () {
+    this.value = this.value.replace(/[^0-9]/g, "");
+  });
+}
 
 document.getElementById("btnLogin").addEventListener("click", async () => {
   const pin = document.getElementById("loginPin").value.trim();
@@ -1824,7 +1887,7 @@ document.getElementById("btnSimpanKirim").addEventListener("click", async () => 
     saldoAkhir: totalSaldo,
     laporanLengkap: text,
     rawData: rawData,
-    timestamp: editingId !== null ? editingTimestamp : new Date().getTime(),
+    timestamp: new Date().getTime(),
   };
 
   if (firebaseReady && db) {
@@ -1837,6 +1900,13 @@ document.getElementById("btnSimpanKirim").addEventListener("click", async () => 
         .then(() => {
           document.getElementById("loading").classList.add("hidden");
           showToast("✅ Perubahan Berhasil Disimpan!");
+          sendNativeNotification(
+            "Laporan Berhasil Diperbarui! ✅",
+            `Perubahan data laporan Kasir ${dataToSave.kasir || ""} tanggal ${dataToSave.tanggal} telah disimpan ke sistem.`,
+            "kasir-updated",
+            "report-out",
+            editingId,
+          );
           exitEditMode();
           document.getElementById("view-kasir").classList.add("hidden");
           document
@@ -1898,6 +1968,13 @@ document.getElementById("btnSimpanKirim").addEventListener("click", async () => 
     document.getElementById("loading").classList.add("hidden");
     if (editingId !== null) {
       showToast("Perubahan Berhasil Disimpan!");
+      sendNativeNotification(
+        "Laporan Berhasil Diperbarui! ✅",
+        `Perubahan data laporan Kasir ${dataToSave.kasir || ""} tanggal ${dataToSave.tanggal} telah disimpan ke sistem lokal.`,
+        "kasir-updated",
+        "report-out",
+        editingId,
+      );
       exitEditMode();
       document.getElementById("view-kasir").classList.add("hidden");
       document.getElementById("view-kasir-history").classList.remove("hidden");

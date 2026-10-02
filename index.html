@@ -99,6 +99,12 @@
               </div>
             </div>
             <div class="user-dropdown-divider"></div>
+            <button type="button" class="user-dropdown-item hidden" id="menuKelolaProduk" onclick="handleUserKelolaProduk(event)">
+              <div class="item-left">
+                <i class="fa-solid fa-tags text-primary"></i>
+                <span>Kelola Menu Produk</span>
+              </div>
+            </button>
             <button type="button" class="user-dropdown-item" id="menuNotifications" onclick="showNotificationCenterModal(event)">
               <div class="item-left">
                 <i class="fa-solid fa-bell text-gold"></i>
@@ -152,6 +158,8 @@
             placeholder="Masukkan PIN"
             class="login-input"
             maxlength="4"
+            inputmode="numeric"
+            pattern="[0-9]*"
             autocomplete="off"
           />
         </div>
@@ -492,6 +500,17 @@
     </main>
 
     <main id="view-admin" class="container view-section hidden">
+      <div class="top-action-bar">
+        <button
+          id="btnGoToProducts"
+          type="button"
+          class="btn btn-secondary btn-small"
+          onclick="switchView('admin-products')"
+        >
+          <i class="fa-solid fa-tags text-primary"></i> Kelola Menu &amp; Harga Produk
+        </button>
+      </div>
+
       <div class="grid-3">
         <div class="stat-card red">
           <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
@@ -515,31 +534,6 @@
           </div>
         </div>
       </div>
-
-      <!-- KELOLA PRODUK & SETTING HARGA CARD -->
-      <section class="card product-mgmt-card" style="margin-top: 20px">
-        <div class="product-mgmt-header">
-          <div class="product-header-title-wrap">
-            <div class="product-mgmt-icon-badge">
-              <i class="fa-solid fa-tags"></i>
-            </div>
-            <div>
-              <div class="product-title-row">
-                <h2>Kelola Menu &amp; Setting Harga</h2>
-                <span class="badge-count" id="productCountBadge">3 Menu Produk</span>
-              </div>
-              <p class="section-desc">Atur nama menu, harga satuan, dan pengaitan stok produk. Perubahan tersinkron realtime ke form kasir.</p>
-            </div>
-          </div>
-          <button type="button" class="btn btn-primary btn-small btn-add-product" id="btnOpenAddProduct" onclick="openAddProductModal()">
-            <i class="fa-solid fa-circle-plus"></i> Tambah Menu Baru
-          </button>
-        </div>
-
-        <div class="product-grid-container" id="productGridContainer">
-          <!-- Dynamic product cards rendered by script.js -->
-        </div>
-      </section>
 
       <section class="card" style="margin-top: 20px">
         <div class="header-between admin-wrap-header">
@@ -685,6 +679,44 @@
               <i class="fa-solid fa-file-arrow-down"></i> Buat &amp; Unduh Laporan PDF
             </button>
           </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Dedicated View Page: Kelola Produk (Admin / Owner) -->
+    <main id="view-admin-products" class="container view-section hidden">
+      <div class="top-action-bar">
+        <button
+          id="btnBackToDashboard"
+          type="button"
+          class="btn btn-secondary btn-small"
+          onclick="switchView('admin')"
+        >
+          <i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard
+        </button>
+      </div>
+
+      <section class="card product-mgmt-card">
+        <div class="product-mgmt-header">
+          <div class="product-header-title-wrap">
+            <div class="product-mgmt-icon-badge">
+              <i class="fa-solid fa-tags"></i>
+            </div>
+            <div>
+              <div class="product-title-row">
+                <h2>Kelola Menu &amp; Setting Harga</h2>
+                <span class="badge-count" id="productCountBadge">3 Menu Produk</span>
+              </div>
+              <p class="section-desc">Atur nama menu, harga satuan, dan pengaitan pengurangan stok produk. Semua perubahan tersinkron realtime ke form kasir.</p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary btn-small btn-add-product" id="btnOpenAddProduct" onclick="openAddProductModal()">
+            <i class="fa-solid fa-circle-plus"></i> Tambah Menu Baru
+          </button>
+        </div>
+
+        <div class="product-grid-container" id="productGridContainer">
+          <!-- Dynamic product cards rendered by script.js -->
         </div>
       </section>
     </main>
