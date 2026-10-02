@@ -497,7 +497,58 @@
     </main>
 
     <main id="view-admin" class="container view-section hidden">
-      <div class="top-action-bar">
+      <div class="admin-top-toolbar">
+        <div class="admin-filter-pill-wrapper">
+          <div class="segmented-filter-group" id="adminSegmentedFilters" role="tablist">
+            <button
+              type="button"
+              class="filter-pill active"
+              data-filter="7days"
+              onclick="setAdminPillFilter('7days')"
+            >
+              <i class="fa-solid fa-clock-rotate-left"></i>
+              <span>7 Hari Terakhir</span>
+            </button>
+            <button
+              type="button"
+              class="filter-pill"
+              data-filter="today"
+              onclick="setAdminPillFilter('today')"
+            >
+              <i class="fa-regular fa-calendar-day"></i>
+              <span>Hari Ini</span>
+            </button>
+            <button
+              type="button"
+              class="filter-pill"
+              data-filter="thisMonth"
+              onclick="setAdminPillFilter('thisMonth')"
+            >
+              <i class="fa-regular fa-calendar-check"></i>
+              <span>Bulan Ini</span>
+            </button>
+            <button
+              type="button"
+              class="filter-pill"
+              data-filter="all"
+              onclick="setAdminPillFilter('all')"
+            >
+              <i class="fa-solid fa-layer-group"></i>
+              <span>Semua Waktu</span>
+            </button>
+            <button
+              type="button"
+              class="filter-pill"
+              data-filter="custom"
+              id="btnPillCustom"
+              onclick="setAdminPillFilter('custom')"
+            >
+              <i class="fa-regular fa-calendar-plus"></i>
+              <span>Kustom</span>
+            </button>
+          </div>
+        </div>
+
         <button
           id="btnGoToProducts"
           type="button"
@@ -508,72 +559,51 @@
         </button>
       </div>
 
-      <div class="grid-3">
-        <div class="stat-card red">
-          <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
-          <div class="stat-details">
-            <span>Saldo Hari Ini</span>
-            <h3 id="statToday">Rp0</h3>
+      <!-- Collapsible Custom Date Range Picker for Admin Filter Pill -->
+      <div id="adminPillCustomPanel" class="admin-custom-date-panel hidden">
+        <div class="custom-date-inner">
+          <div class="custom-date-field">
+            <label for="adminDateStart"><i class="fa-regular fa-calendar"></i> Dari:</label>
+            <input type="date" id="adminDateStart" class="filter-date-input" />
           </div>
-        </div>
-        <div class="stat-card green">
-          <div class="stat-icon"><i class="fas fa-calendar-week"></i></div>
-          <div class="stat-details">
-            <span>Saldo Bulan Ini</span>
-            <h3 id="statMonth">Rp0</h3>
+          <div class="custom-date-field">
+            <label for="adminDateEnd"><i class="fa-regular fa-calendar"></i> Sampai:</label>
+            <input type="date" id="adminDateEnd" class="filter-date-input" />
           </div>
-        </div>
-        <div class="stat-card yellow">
-          <div class="stat-icon"><i class="fas fa-receipt"></i></div>
-          <div class="stat-details">
-            <span>Total Laporan</span>
-            <h3 id="statTotalDoc">0</h3>
-          </div>
-        </div>
-      </div>
-
-      <!-- Unified Admin Period Filter (Grafik & Database Laporan) -->
-      <section class="card admin-unified-filter-card" style="margin-top: 20px">
-        <div class="unified-filter-header">
-          <div class="unified-filter-title-group">
-            <div class="unified-filter-icon-badge">
-              <i class="fa-solid fa-sliders"></i>
-            </div>
-            <div>
-              <h3>Filter Periode Data (Grafik &amp; Database)</h3>
-              <p class="section-desc">Menyaring tampilan grafik pendapatan dan tabel riwayat database secara bersamaan.</p>
-            </div>
-          </div>
-          <div class="unified-filter-controls">
-            <div class="filter-item">
-              <label for="adminUnifiedFilter"><i class="fa-regular fa-calendar"></i> Periode:</label>
-              <select id="adminUnifiedFilter" class="filter-select">
-                <option value="7days" selected>7 Hari Terakhir</option>
-                <option value="today">Hari Ini</option>
-                <option value="thisMonth">Bulan Ini</option>
-                <option value="all">Semua Waktu</option>
-                <option value="custom">Rentang Tanggal (Kustom)...</option>
-              </select>
-            </div>
-            <div id="adminUnifiedCustomDates" class="filter-custom-dates hidden">
-              <div class="filter-item">
-                <label for="adminDateStart">Dari:</label>
-                <input type="date" id="adminDateStart" class="filter-date-input" />
-              </div>
-              <div class="filter-item">
-                <label for="adminDateEnd">Sampai:</label>
-                <input type="date" id="adminDateEnd" class="filter-date-input" />
-              </div>
-              <button type="button" id="btnApplyAdminUnifiedFilter" class="btn btn-small btn-orange">
-                <i class="fa-solid fa-check"></i> Terapkan
-              </button>
-            </div>
-            <button type="button" id="btnResetAdminUnifiedFilter" class="btn btn-small btn-secondary btn-reset-filter hidden" title="Reset Filter ke 7 Hari Terakhir">
+          <div class="custom-date-actions">
+            <button type="button" id="btnApplyAdminUnifiedFilter" class="btn btn-small btn-orange">
+              <i class="fa-solid fa-check"></i> Terapkan
+            </button>
+            <button type="button" id="btnResetAdminUnifiedFilter" class="btn btn-small btn-secondary">
               <i class="fa-solid fa-rotate-left"></i> Reset (7 Hari)
             </button>
           </div>
         </div>
-      </section>
+      </div>
+
+      <div class="grid-3" style="margin-top: 14px">
+        <div class="stat-card red">
+          <div class="stat-icon"><i class="fa-solid fa-wallet"></i></div>
+          <div class="stat-details">
+            <span id="statLabelSaldo">Saldo Bersih (7 Hari)</span>
+            <h3 id="statToday">Rp0</h3>
+          </div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+          <div class="stat-details">
+            <span id="statLabelPenjualan">Penjualan Kotor (7 Hari)</span>
+            <h3 id="statMonth">Rp0</h3>
+          </div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-icon"><i class="fa-solid fa-receipt"></i></div>
+          <div class="stat-details">
+            <span id="statLabelDoc">Total Laporan (7 Hari)</span>
+            <h3 id="statTotalDoc">0</h3>
+          </div>
+        </div>
+      </div>
 
       <section class="card" style="margin-top: 20px">
         <div class="header-between admin-wrap-header">

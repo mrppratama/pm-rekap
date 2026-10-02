@@ -2558,17 +2558,6 @@ const renderAdminDashboard = () => {
   const todayStr = `${new Date().getDate().toString().padStart(2, "0")}/${(new Date().getMonth() + 1).toString().padStart(2, "0")}/${new Date().getFullYear()}`;
   const monthStr = `${(new Date().getMonth() + 1).toString().padStart(2, "0")}/${new Date().getFullYear()}`;
 
-  let saldoToday = 0,
-    saldoMonth = 0;
-  reports.forEach((item) => {
-    if (item.tanggal === todayStr) saldoToday += item.saldoAkhir || 0;
-    if (item.tanggal && item.tanggal.includes(monthStr)) saldoMonth += item.saldoAkhir || 0;
-  });
-
-  document.getElementById("statToday").textContent = formatRupiah(saldoToday);
-  document.getElementById("statMonth").textContent = formatRupiah(saldoMonth);
-  document.getElementById("statTotalDoc").textContent = reports.length;
-
   let filteredReports = filterReportsByDate(
     reports,
     adminFilterState.type,
@@ -2576,14 +2565,46 @@ const renderAdminDashboard = () => {
     adminFilterState.endDate,
   );
 
-  // Update Status Badges for Chart and Database Table
+  // Update Status Badges & Dynamic Labels
   let badgeText = "7 Hari Terakhir";
-  if (adminFilterState.type === "today") badgeText = `Hari Ini (${todayStr})`;
-  else if (adminFilterState.type === "thisMonth") badgeText = `Bulan Ini (${monthStr})`;
-  else if (adminFilterState.type === "all") badgeText = "Semua Waktu";
-  else if (adminFilterState.type === "custom") {
+  let shortBadge = "7 Hari";
+  if (adminFilterState.type === "today") {
+    badgeText = `Hari Ini (${todayStr})`;
+    shortBadge = "Hari Ini";
+  } else if (adminFilterState.type === "thisMonth") {
+    badgeText = `Bulan Ini (${monthStr})`;
+    shortBadge = "Bulan Ini";
+  } else if (adminFilterState.type === "all") {
+    badgeText = "Semua Waktu";
+    shortBadge = "Semua";
+  } else if (adminFilterState.type === "custom") {
     badgeText = `${adminFilterState.startDate || "Awal"} s/d ${adminFilterState.endDate || "Akhir"}`;
+    shortBadge = "Kustom";
   }
+
+  // Calculate dynamic filtered metrics for the 3 Summary Cards
+  let saldoFiltered = 0;
+  let penjualanFiltered = 0;
+  filteredReports.forEach((item) => {
+    saldoFiltered += item.saldoAkhir || 0;
+    penjualanFiltered += item.penjualan || 0;
+  });
+
+  const statSaldoEl = document.getElementById("statToday");
+  const statPenjualanEl = document.getElementById("statMonth");
+  const statDocEl = document.getElementById("statTotalDoc");
+
+  const statLabelSaldo = document.getElementById("statLabelSaldo");
+  const statLabelPenjualan = document.getElementById("statLabelPenjualan");
+  const statLabelDoc = document.getElementById("statLabelDoc");
+
+  if (statSaldoEl) statSaldoEl.textContent = formatRupiah(saldoFiltered);
+  if (statPenjualanEl) statPenjualanEl.textContent = formatRupiah(penjualanFiltered);
+  if (statDocEl) statDocEl.textContent = filteredReports.length;
+
+  if (statLabelSaldo) statLabelSaldo.textContent = `Saldo Bersih (${shortBadge})`;
+  if (statLabelPenjualan) statLabelPenjualan.textContent = `Penjualan Kotor (${shortBadge})`;
+  if (statLabelDoc) statLabelDoc.textContent = `Total Laporan (${shortBadge})`;
 
   const chartBadge = document.getElementById("chartFilterStatusBadge");
   const tableBadge = document.getElementById("tableFilterStatusBadge");
@@ -3236,32 +3257,32 @@ const setupHistoryFilterListeners = () => {
     btnResetKasir.addEventListener("click", window.resetKasirFilterAction);
   }
 
-  // Admin Unified Filter (Grafik & Database)
-  const adminUnifiedFilter = document.getElementById("adminUnifiedFilter");
-  const adminUnifiedCustomWrap = document.getElementById("adminUnifiedCustomDates");
+  // --- Admin Segmented Pill Filter System ---
+  window.setAdminPillFilter = (filterType) => {
+    // Update active visual status on pill buttons
+    document.querySelectorAll("#adminSegmentedFilters .filter-pill").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.filter === filterType);
+    });
+
+    const customPanel = document.getElementById("adminPillCustomPanel");
+
+    if (filterType === "custom") {
+      if (customPanel) customPanel.classList.remove("hidden");
+      return;
+    }
+
+    if (customPanel) customPanel.classList.add("hidden");
+
+    adminFilterState.type = filterType;
+    adminFilterState.startDate = "";
+    adminFilterState.endDate = "";
+    adminCurrentPage = 1;
+
+    renderAdminDashboard();
+  };
+
   const btnApplyAdmin = document.getElementById("btnApplyAdminUnifiedFilter");
   const btnResetAdmin = document.getElementById("btnResetAdminUnifiedFilter");
-
-  if (adminUnifiedFilter) {
-    adminUnifiedFilter.addEventListener("change", (e) => {
-      const val = e.target.value;
-      if (val === "custom") {
-        adminUnifiedCustomWrap?.classList.remove("hidden");
-      } else {
-        adminUnifiedCustomWrap?.classList.add("hidden");
-        adminFilterState.type = val;
-        adminFilterState.startDate = "";
-        adminFilterState.endDate = "";
-        adminCurrentPage = 1;
-
-        if (btnResetAdmin) {
-          if (val === "7days") btnResetAdmin.classList.add("hidden");
-          else btnResetAdmin.classList.remove("hidden");
-        }
-        renderAdminDashboard();
-      }
-    });
-  }
 
   if (btnApplyAdmin) {
     btnApplyAdmin.addEventListener("click", () => {
@@ -3279,23 +3300,21 @@ const setupHistoryFilterListeners = () => {
       adminFilterState.startDate = start;
       adminFilterState.endDate = end;
       adminCurrentPage = 1;
-      if (btnResetAdmin) btnResetAdmin.classList.remove("hidden");
       renderAdminDashboard();
     });
   }
 
   window.resetAdminFilterAction = () => {
     adminFilterState = { type: "7days", startDate: "", endDate: "" };
-    if (adminUnifiedFilter) {
-      adminUnifiedFilter.value = "7days";
-      adminUnifiedFilter.dispatchEvent(new Event("change"));
-    }
-    if (adminUnifiedCustomWrap) adminUnifiedCustomWrap.classList.add("hidden");
+    const customPanel = document.getElementById("adminPillCustomPanel");
+    if (customPanel) customPanel.classList.add("hidden");
     const sInput = document.getElementById("adminDateStart");
     const eInput = document.getElementById("adminDateEnd");
     if (sInput) sInput.value = "";
     if (eInput) eInput.value = "";
-    if (btnResetAdmin) btnResetAdmin.classList.add("hidden");
+    document.querySelectorAll("#adminSegmentedFilters .filter-pill").forEach((btn) => {
+      btn.classList.toggle("active", btn.dataset.filter === "7days");
+    });
     adminCurrentPage = 1;
     renderAdminDashboard();
   };
