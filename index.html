@@ -245,11 +245,14 @@
         <div class="col-right">
           <section class="card h-full">
             <h2><i class="fas fa-shopping-cart"></i> Penjualan Hari Ini</h2>
-            <div class="sales-list">
-              <div class="sales-item">
+            <div class="sales-list" id="salesList">
+              <div class="sales-item" data-product-id="fc">
                 <div class="sales-info">
-                  <strong>Fried Chicken</strong>
-                  <span class="price-tag">@ Rp10.000</span>
+                  <div class="sales-info-top">
+                    <strong>Fried Chicken</strong>
+                    <span class="prod-badge-stock fc"><i class="fa-solid fa-drumstick-bite"></i> Stok Ayam</span>
+                  </div>
+                  <span class="price-tag">@ Rp10.000 / pcs</span>
                 </div>
                 <div class="sales-controls">
                   <div class="qty-control">
@@ -259,7 +262,8 @@
                     <input
                       type="number"
                       id="jualFc"
-                      class="calc-input"
+                      data-product-id="fc"
+                      class="calc-input product-sales-qty"
                       value="0"
                       required
                     />
@@ -271,10 +275,13 @@
                 </div>
               </div>
 
-              <div class="sales-item">
+              <div class="sales-item" data-product-id="geprek">
                 <div class="sales-info">
-                  <strong>Ayam Geprek</strong>
-                  <span class="price-tag">@ Rp13.000</span>
+                  <div class="sales-info-top">
+                    <strong>Ayam Geprek</strong>
+                    <span class="prod-badge-stock fc"><i class="fa-solid fa-drumstick-bite"></i> Stok Ayam</span>
+                  </div>
+                  <span class="price-tag">@ Rp13.000 / pcs</span>
                 </div>
                 <div class="sales-controls">
                   <div class="qty-control">
@@ -284,7 +291,8 @@
                     <input
                       type="number"
                       id="jualGeprek"
-                      class="calc-input"
+                      data-product-id="geprek"
+                      class="calc-input product-sales-qty"
                       value="0"
                       required
                     />
@@ -296,10 +304,13 @@
                 </div>
               </div>
 
-              <div class="sales-item">
+              <div class="sales-item" data-product-id="nasi">
                 <div class="sales-info">
-                  <strong>Nasi</strong>
-                  <span class="price-tag">@ Rp3.000</span>
+                  <div class="sales-info-top">
+                    <strong>Nasi</strong>
+                    <span class="prod-badge-stock nasi"><i class="fa-solid fa-bowl-rice"></i> Stok Nasi</span>
+                  </div>
+                  <span class="price-tag">@ Rp3.000 / porsi</span>
                 </div>
                 <div class="sales-controls">
                   <div class="qty-control">
@@ -309,7 +320,8 @@
                     <input
                       type="number"
                       id="jualNasi"
-                      class="calc-input"
+                      data-product-id="nasi"
+                      class="calc-input product-sales-qty"
                       value="0"
                       required
                     />
@@ -478,6 +490,31 @@
           </div>
         </div>
       </div>
+
+      <!-- KELOLA PRODUK & SETTING HARGA CARD -->
+      <section class="card product-mgmt-card" style="margin-top: 20px">
+        <div class="product-mgmt-header">
+          <div class="product-header-title-wrap">
+            <div class="product-mgmt-icon-badge">
+              <i class="fa-solid fa-tags"></i>
+            </div>
+            <div>
+              <div class="product-title-row">
+                <h2>Kelola Menu &amp; Setting Harga</h2>
+                <span class="badge-count" id="productCountBadge">3 Menu Produk</span>
+              </div>
+              <p class="section-desc">Atur nama menu, harga satuan, dan pengaitan stok produk. Perubahan tersinkron realtime ke form kasir.</p>
+            </div>
+          </div>
+          <button type="button" class="btn btn-primary btn-small btn-add-product" id="btnOpenAddProduct" onclick="openAddProductModal()">
+            <i class="fa-solid fa-circle-plus"></i> Tambah Menu Baru
+          </button>
+        </div>
+
+        <div class="product-grid-container" id="productGridContainer">
+          <!-- Dynamic product cards rendered by script.js -->
+        </div>
+      </section>
 
       <section class="card" style="margin-top: 20px">
         <div class="header-between admin-wrap-header">
@@ -759,9 +796,64 @@
       </div>
     </div>
 
-    <footer>
-      <p>COPYRIGHT &copy; PM FRIED CHICKEN 2026 &bull; ALL RIGHTS RESERVED</p>
-    </footer>
+    <!-- Modal Kelola / Tambah / Edit Produk (Admin / Owner) -->
+    <div id="productModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content product-modal-card">
+        <div class="modal-header">
+          <div class="product-modal-title">
+            <i class="fa-solid fa-tags text-primary" id="productModalIcon"></i>
+            <h2 id="productModalTitle">Tambah Menu Baru</h2>
+          </div>
+          <span class="close-modal" onclick="closeModal('productModal')">&times;</span>
+        </div>
+        <form id="formProduct" onsubmit="handleSaveProduct(event)">
+          <div class="modal-body product-modal-body">
+            <input type="hidden" id="prodEditId" value="" />
+            
+            <div class="form-group">
+              <label for="prodName"><i class="fa-solid fa-utensils"></i> Nama Menu / Produk <span class="text-red">*</span></label>
+              <input type="text" id="prodName" required placeholder="Contoh: Fried Chicken / Es Teh Manis" autocomplete="off" />
+            </div>
+
+            <div class="grid-2">
+              <div class="form-group">
+                <label for="prodPrice"><i class="fa-solid fa-money-bill-wave"></i> Harga Satuan (Rp) <span class="text-red">*</span></label>
+                <input type="number" id="prodPrice" min="0" step="500" required placeholder="10000" />
+              </div>
+              <div class="form-group">
+                <label for="prodUnit"><i class="fa-solid fa-box"></i> Satuan <span class="text-red">*</span></label>
+                <input type="text" id="prodUnit" required placeholder="pcs / porsi / cup" value="pcs" />
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="prodStockType"><i class="fa-solid fa-boxes-stacked"></i> Pengaitan Pengurangan Stok</label>
+              <select id="prodStockType" class="form-select">
+                <option value="fc">🍗 Mengurangi Stok Ayam Fried Chicken (potong/pcs)</option>
+                <option value="nasi">🍚 Mengurangi Stok Nasi (porsi)</option>
+                <option value="none">✨ Tanpa Pengurangan Stok Awal (Bebas / Minuman / Ekstra)</option>
+              </select>
+              <small class="text-muted" style="display:block; margin-top: 6px; line-height: 1.4;">
+                Pilih apakah penjualan produk ini akan otomatis mengurangi stok awal Fried Chicken, stok Nasi, atau tidak memotong stok awal (produk bebas).
+              </small>
+            </div>
+          </div>
+          <div class="modal-actions product-modal-actions">
+            <button type="button" class="btn btn-danger hidden" id="btnDeleteProduct" onclick="handleDeleteProduct()">
+              <i class="fa-solid fa-trash-can"></i> Hapus Menu
+            </button>
+            <div class="modal-actions-right">
+              <button type="button" class="btn btn-outline" onclick="closeModal('productModal')">
+                Batal
+              </button>
+              <button type="submit" class="btn btn-primary" id="btnSaveProduct">
+                <i class="fa-solid fa-floppy-disk"></i> Simpan Menu
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
 
     <script src="firebase-config.js"></script>
     <script src="script.js"></script>

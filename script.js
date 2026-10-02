@@ -1,4 +1,35 @@
-const HARGA = { fc: 10000, geprek: 13000, nasi: 3000 };
+const DEFAULT_PRODUCTS = [
+  { id: "fc", name: "Fried Chicken", price: 10000, unit: "pcs", stockType: "fc" },
+  { id: "geprek", name: "Ayam Geprek", price: 13000, unit: "pcs", stockType: "fc" },
+  { id: "nasi", name: "Nasi", price: 3000, unit: "porsi", stockType: "nasi" },
+];
+
+let currentProducts = (function () {
+  try {
+    const saved = localStorage.getItem("pm_products");
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+    }
+  } catch (_) {}
+  return [...DEFAULT_PRODUCTS];
+})();
+
+const HARGA = new Proxy(
+  {},
+  {
+    get: (target, prop) => {
+      const p = currentProducts.find((x) => x.id === prop);
+      if (p) return p.price || 0;
+      if (prop === "fc") return 10000;
+      if (prop === "geprek") return 13000;
+      if (prop === "nasi") return 3000;
+      return 0;
+    },
+  },
+);
+
+let currentAppRole = "guest";
 let db; // Reference ke Firebase Database
 let firebaseReady = false;
 let firebaseDataLoaded = false;
@@ -159,6 +190,7 @@ const initializeDatabase = () => {
       firebaseReady = true;
       console.log("✅ Database Firebase siap digunakan");
       setupRealtimeListener();
+      setupProductsRealtimeListener();
     } else {
       console.warn("⚠️ Firebase tidak tersedia, menggunakan localStorage");
       useLocalStorage();
@@ -178,6 +210,15 @@ const useLocalStorage = () => {
   window.isUsingLocalStorage = true;
   const records = JSON.parse(localStorage.getItem("pmReports") || "[]");
   allReportsGlobal = records;
+  try {
+    const savedProd = localStorage.getItem("pm_products");
+    if (savedProd) {
+      const parsed = JSON.parse(savedProd);
+      if (Array.isArray(parsed) && parsed.length > 0) currentProducts = parsed;
+    }
+  } catch (_) {}
+  renderKasirSalesList();
+  renderAdminProductGrid();
   firebaseDataLoaded = true;
   console.log("✅ LocalStorage loaded:", allReportsGlobal.length, "records");
   onDataChanged();
@@ -439,6 +480,308 @@ const setupRealtimeListener = () => {
   );
 };
 
+// --- REALTIME LISTENER & MANAGEMENT MENU PRODUK & HARGA ---
+const setupProductsRealtimeListener = () => {
+  if (!db) {
+    renderKasirSalesList();
+    renderAdminProductGrid();
+    return;
+  }
+
+  const prodRef = db.ref("products");
+  prodRef.on(
+    "value",
+    (snapshot) => {
+      const val = snapshot.val();
+      if (val) {
+        if (Array.isArray(val)) {
+          currentProducts = val.filter(Boolean);
+        } else {
+          currentProducts = Object.keys(val).map((k) => ({
+            id: k,
+            ...val[k],
+          }));
+        }
+        localStorage.setItem("pm_products", JSON.stringify(currentProducts));
+      } else {
+        currentProducts = [...DEFAULT_PRODUCTS];
+        try {
+          const seedObj = {};
+          DEFAULT_PRODUCTS.forEach((p) => {
+            seedObj[p.id] = {
+              name: p.name,
+              price: p.price,
+              unit: p.unit,
+              stockType: p.stockType,
+            };
+          });
+          prodRef.set(seedObj);
+        } catch (_) {}
+        localStorage.setItem("pm_products", JSON.stringify(currentProducts));
+      }
+      renderKasirSalesList();
+      renderAdminProductGrid();
+      calculateAll();
+    },
+    (error) => {
+      console.error("❌ Error membaca data produk Firebase:", error);
+      renderKasirSalesList();
+      renderAdminProductGrid();
+    },
+  );
+};
+
+const renderKasirSalesList = () => {
+  const container = document.getElementById("salesList");
+  if (!container) return;
+
+  const currentValues = {};
+  container.querySelectorAll(".product-sales-qty").forEach((input) => {
+    const pid =
+      input.dataset.productId ||
+      input.id.replace("jual_", "").replace("jual", "").toLowerCase();
+    if (pid) currentValues[pid] = input.value;
+  });
+
+  let html = "";
+  currentProducts.forEach((p) => {
+    const val = currentValues[p.id] !== undefined ? currentValues[p.id] : "0";
+    const subtotal = (parseInt(val) || 0) * (p.price || 0);
+    const stockBadge =
+      p.stockType === "fc"
+        ? '<span class="prod-badge-stock fc"><i class="fa-solid fa-drumstick-bite"></i> Stok Ayam</span>'
+        : p.stockType === "nasi"
+          ? '<span class="prod-badge-stock nasi"><i class="fa-solid fa-bowl-rice"></i> Stok Nasi</span>'
+          : '<span class="prod-badge-stock free"><i class="fa-solid fa-sparkles"></i> Bebas</span>';
+
+    const inputId =
+      p.id === "fc"
+        ? "jualFc"
+        : p.id === "geprek"
+          ? "jualGeprek"
+          : p.id === "nasi"
+            ? "jualNasi"
+            : `jual_${p.id}`;
+    const subId =
+      p.id === "fc"
+        ? "subFc"
+        : p.id === "geprek"
+          ? "subGeprek"
+          : p.id === "nasi"
+            ? "subNasi"
+            : `sub_${p.id}`;
+
+    html += `
+      <div class="sales-item" data-product-id="${p.id}">
+        <div class="sales-info">
+          <div class="sales-info-top">
+            <strong>${p.name}</strong>
+            ${stockBadge}
+          </div>
+          <span class="price-tag">@ Rp${formatNumber(p.price)} / ${p.unit || "pcs"}</span>
+        </div>
+        <div class="sales-controls">
+          <div class="qty-control">
+            <button type="button" class="btn-qty minus">
+              <i class="fas fa-minus"></i>
+            </button>
+            <input
+              type="number"
+              id="${inputId}"
+              data-product-id="${p.id}"
+              class="calc-input product-sales-qty"
+              value="${val}"
+              required
+            />
+            <button type="button" class="btn-qty plus">
+              <i class="fas fa-plus"></i>
+            </button>
+          </div>
+          <div class="sales-subtotal" id="${subId}">Rp${formatNumber(subtotal)}</div>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+  setupQtyControls();
+
+  container.querySelectorAll(".calc-input").forEach((input) => {
+    input.addEventListener("input", validateNumberInput);
+  });
+};
+
+const renderAdminProductGrid = () => {
+  const container = document.getElementById("productGridContainer");
+  const countBadge = document.getElementById("productCountBadge");
+  if (countBadge) countBadge.textContent = `${currentProducts.length} Menu Produk`;
+  if (!container) return;
+
+  let html = "";
+  currentProducts.forEach((p) => {
+    const stockText =
+      p.stockType === "fc"
+        ? '<span class="prod-chip fc"><i class="fa-solid fa-drumstick-bite"></i> Potong Stok Ayam</span>'
+        : p.stockType === "nasi"
+          ? '<span class="prod-chip nasi"><i class="fa-solid fa-bowl-rice"></i> Potong Stok Nasi</span>'
+          : '<span class="prod-chip none"><i class="fa-solid fa-sparkles"></i> Bebas (Non-Stok)</span>';
+
+    html += `
+      <div class="product-card-item">
+        <div class="prod-card-header">
+          <div class="prod-card-name-wrap">
+            <h4 class="prod-card-title">${p.name}</h4>
+            ${stockText}
+          </div>
+        </div>
+        <div class="prod-card-body">
+          <div class="prod-card-price">
+            <span class="currency-label">Rp</span>
+            <span class="price-val">${formatNumber(p.price)}</span>
+            <span class="unit-val">/ ${p.unit || "pcs"}</span>
+          </div>
+        </div>
+        <div class="prod-card-footer">
+          <button type="button" class="btn btn-small btn-secondary btn-full" onclick="openEditProductModal('${p.id}')">
+            <i class="fa-solid fa-pen-to-square"></i> Edit Menu &amp; Harga
+          </button>
+        </div>
+      </div>
+    `;
+  });
+
+  container.innerHTML = html;
+};
+
+window.openAddProductModal = () => {
+  document.getElementById("prodEditId").value = "";
+  document.getElementById("productModalTitle").textContent = "Tambah Menu Baru";
+  document.getElementById("productModalIcon").className = "fa-solid fa-tags text-primary";
+  document.getElementById("prodName").value = "";
+  document.getElementById("prodPrice").value = "";
+  document.getElementById("prodUnit").value = "pcs";
+  document.getElementById("prodStockType").value = "fc";
+  document.getElementById("btnDeleteProduct").classList.add("hidden");
+  document.getElementById("btnSaveProduct").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Menu';
+
+  const modal = document.getElementById("productModal");
+  if (modal) modal.classList.remove("hidden");
+  setTimeout(() => document.getElementById("prodName")?.focus(), 100);
+};
+
+window.openEditProductModal = (id) => {
+  const product = currentProducts.find((p) => p.id === id);
+  if (!product) return;
+
+  document.getElementById("prodEditId").value = product.id;
+  document.getElementById("productModalTitle").textContent = `Edit Menu: ${product.name}`;
+  document.getElementById("productModalIcon").className = "fa-solid fa-pen-to-square text-primary";
+  document.getElementById("prodName").value = product.name || "";
+  document.getElementById("prodPrice").value = product.price || 0;
+  document.getElementById("prodUnit").value = product.unit || "pcs";
+  document.getElementById("prodStockType").value = product.stockType || "none";
+
+  const btnDelete = document.getElementById("btnDeleteProduct");
+  btnDelete.classList.remove("hidden");
+
+  document.getElementById("btnSaveProduct").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update Menu';
+
+  const modal = document.getElementById("productModal");
+  if (modal) modal.classList.remove("hidden");
+};
+
+window.handleSaveProduct = async (e) => {
+  if (e) e.preventDefault();
+  const editId = document.getElementById("prodEditId").value.trim();
+  const name = document.getElementById("prodName").value.trim();
+  const price = parseInt(document.getElementById("prodPrice").value) || 0;
+  const unit = document.getElementById("prodUnit").value.trim() || "pcs";
+  const stockType = document.getElementById("prodStockType").value || "none";
+
+  if (!name) {
+    await customAlert("Mohon masukkan nama produk/menu.", "Nama Kosong", "warning");
+    return;
+  }
+  if (price < 0) {
+    await customAlert("Harga produk tidak boleh bernilai negatif.", "Harga Tidak Valid", "warning");
+    return;
+  }
+
+  const pid = editId || "prod_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
+  const updatedProduct = {
+    id: pid,
+    name,
+    price,
+    unit,
+    stockType,
+  };
+
+  if (firebaseReady && db) {
+    try {
+      await db.ref(`products/${pid}`).set({
+        name: updatedProduct.name,
+        price: updatedProduct.price,
+        unit: updatedProduct.unit,
+        stockType: updatedProduct.stockType,
+      });
+      showToast(`✅ Menu "${name}" berhasil disimpan!`);
+    } catch (err) {
+      await customAlert("Gagal menyimpan ke Firebase: " + err.message, "Gagal Simpan", "error");
+      return;
+    }
+  } else {
+    const idx = currentProducts.findIndex((p) => p.id === pid);
+    if (idx !== -1) {
+      currentProducts[idx] = updatedProduct;
+    } else {
+      currentProducts.push(updatedProduct);
+    }
+    localStorage.setItem("pm_products", JSON.stringify(currentProducts));
+    renderKasirSalesList();
+    renderAdminProductGrid();
+    calculateAll();
+    showToast(`✅ Menu "${name}" berhasil disimpan (Lokal)!`);
+  }
+
+  closeModal("productModal");
+};
+
+window.handleDeleteProduct = async () => {
+  const editId = document.getElementById("prodEditId").value.trim();
+  if (!editId) return;
+
+  const product = currentProducts.find((p) => p.id === editId);
+  const prodName = product?.name || "menu ini";
+
+  const confirmed = await customConfirm(
+    `Apakah Anda yakin ingin menghapus menu "${prodName}" dari sistem?`,
+    "Hapus Menu Produk",
+    "Ya, Hapus Menu",
+    "Batal",
+    "danger",
+  );
+
+  if (confirmed) {
+    if (firebaseReady && db) {
+      try {
+        await db.ref(`products/${editId}`).remove();
+        showToast(`✅ Menu "${prodName}" berhasil dihapus`);
+      } catch (err) {
+        await customAlert("Gagal menghapus produk: " + err.message, "Gagal Hapus", "error");
+        return;
+      }
+    } else {
+      currentProducts = currentProducts.filter((p) => p.id !== editId);
+      localStorage.setItem("pm_products", JSON.stringify(currentProducts));
+      renderKasirSalesList();
+      renderAdminProductGrid();
+      calculateAll();
+      showToast(`✅ Menu "${prodName}" berhasil dihapus`);
+    }
+    closeModal("productModal");
+  }
+};
+
 const onDataChanged = () => {
   if (window.isEditMode) return;
 
@@ -539,8 +882,6 @@ const userAccountRole = document.getElementById("userAccountRole");
 const userDropdownAvatar = document.getElementById("userDropdownAvatar");
 const userDropdownName = document.getElementById("userDropdownName");
 const userDropdownBadge = document.getElementById("userDropdownBadge");
-
-let currentAppRole = null;
 
 const switchView = (role) => {
   currentAppRole = role;
@@ -762,58 +1103,83 @@ const setupQtyControls = () => {
 };
 
 const calculateAll = () => {
-  const awalFc = parseInt(document.getElementById("awalFc").value) || 0;
-  const awalNasi = parseInt(document.getElementById("awalNasi").value) || 0;
-  const jualFc = parseInt(document.getElementById("jualFc").value) || 0;
-  const jualGeprek = parseInt(document.getElementById("jualGeprek").value) || 0;
-  const jualNasi = parseInt(document.getElementById("jualNasi").value) || 0;
+  const awalFc = parseInt(document.getElementById("awalFc")?.value) || 0;
+  const awalNasi = parseInt(document.getElementById("awalNasi")?.value) || 0;
 
-  const akhirFc = awalFc - (jualFc + jualGeprek);
-  const akhirNasi = awalNasi - jualNasi;
+  let totalSalesQtyFc = 0;
+  let totalSalesQtyNasi = 0;
+  let totalPenjualan = 0;
+
+  currentProducts.forEach((p) => {
+    const input =
+      document.getElementById(`jual_${p.id}`) ||
+      (p.id === "fc" ? document.getElementById("jualFc") : null) ||
+      (p.id === "geprek" ? document.getElementById("jualGeprek") : null) ||
+      (p.id === "nasi" ? document.getElementById("jualNasi") : null);
+
+    const qty = parseInt(input?.value) || 0;
+    const subtotal = qty * (p.price || 0);
+
+    const subEl =
+      document.getElementById(`sub_${p.id}`) ||
+      (p.id === "fc" ? document.getElementById("subFc") : null) ||
+      (p.id === "geprek" ? document.getElementById("subGeprek") : null) ||
+      (p.id === "nasi" ? document.getElementById("subNasi") : null);
+
+    if (subEl) subEl.textContent = formatRupiah(subtotal);
+
+    totalPenjualan += subtotal;
+
+    if (p.stockType === "fc") {
+      totalSalesQtyFc += qty;
+    } else if (p.stockType === "nasi") {
+      totalSalesQtyNasi += qty;
+    }
+  });
+
+  const akhirFc = awalFc - totalSalesQtyFc;
+  const akhirNasi = awalNasi - totalSalesQtyNasi;
 
   const elAkhirFc = document.getElementById("akhirFc");
   const elAkhirNasi = document.getElementById("akhirNasi");
 
-  elAkhirFc.textContent = akhirFc;
-  elAkhirFc.style.color = akhirFc < 0 ? "var(--primary)" : "var(--primary)";
+  if (elAkhirFc) {
+    elAkhirFc.textContent = akhirFc;
+    elAkhirFc.style.color = akhirFc < 0 ? "var(--primary)" : "var(--primary)";
+  }
 
-  elAkhirNasi.textContent = akhirNasi;
-  elAkhirNasi.style.color = akhirNasi < 0 ? "var(--primary)" : "var(--primary)";
+  if (elAkhirNasi) {
+    elAkhirNasi.textContent = akhirNasi;
+    elAkhirNasi.style.color = akhirNasi < 0 ? "var(--primary)" : "var(--primary)";
+  }
 
-  const subFc = jualFc * HARGA.fc;
-  const subGeprek = jualGeprek * HARGA.geprek;
-  const subNasi = jualNasi * HARGA.nasi;
+  const totalPenjEl = document.getElementById("totalPenjualan");
+  if (totalPenjEl) totalPenjEl.textContent = formatRupiah(totalPenjualan);
 
-  document.getElementById("subFc").textContent = formatRupiah(subFc);
-  document.getElementById("subGeprek").textContent = formatRupiah(subGeprek);
-  document.getElementById("subNasi").textContent = formatRupiah(subNasi);
-
-  const totalPenjualan = subFc + subGeprek + subNasi;
-  document.getElementById("totalPenjualan").textContent =
-    formatRupiah(totalPenjualan);
-  document.getElementById("sumPenjualan").textContent =
-    formatRupiah(totalPenjualan);
+  const sumPenjEl = document.getElementById("sumPenjualan");
+  if (sumPenjEl) sumPenjEl.textContent = formatRupiah(totalPenjualan);
 
   let totalPemasukan = 0;
   document
     .querySelectorAll(".income-amount")
     .forEach((input) => (totalPemasukan += parseCurrency(input.value)));
-  document.getElementById("totalPemasukan").textContent =
-    formatRupiah(totalPemasukan);
-  document.getElementById("sumPemasukan").textContent =
-    formatRupiah(totalPemasukan);
+  const totalPemasukanEl = document.getElementById("totalPemasukan");
+  if (totalPemasukanEl) totalPemasukanEl.textContent = formatRupiah(totalPemasukan);
+  const sumPemasukanEl = document.getElementById("sumPemasukan");
+  if (sumPemasukanEl) sumPemasukanEl.textContent = formatRupiah(totalPemasukan);
 
   let totalPengeluaran = 0;
   document
     .querySelectorAll(".expense-amount")
     .forEach((input) => (totalPengeluaran += parseCurrency(input.value)));
-  document.getElementById("totalPengeluaran").textContent =
-    formatRupiah(totalPengeluaran);
-  document.getElementById("sumPengeluaran").textContent =
-    formatRupiah(totalPengeluaran);
+  const totalPengeluaranEl = document.getElementById("totalPengeluaran");
+  if (totalPengeluaranEl) totalPengeluaranEl.textContent = formatRupiah(totalPengeluaran);
+  const sumPengeluaranEl = document.getElementById("sumPengeluaran");
+  if (sumPengeluaranEl) sumPengeluaranEl.textContent = formatRupiah(totalPengeluaran);
 
   const saldoAkhir = totalPenjualan + totalPemasukan - totalPengeluaran;
-  document.getElementById("saldoAkhir").textContent = formatRupiah(saldoAkhir);
+  const saldoAkhirEl = document.getElementById("saldoAkhir");
+  if (saldoAkhirEl) saldoAkhirEl.textContent = formatRupiah(saldoAkhir);
 };
 
 document.getElementById("btnAddIncome").addEventListener("click", async () => {
@@ -894,27 +1260,66 @@ const validateForm = async () => {
     kasirInput.focus();
     return false;
   }
-  for (let id of ["awalFc", "awalNasi", "jualFc", "jualGeprek", "jualNasi"]) {
-    if (document.getElementById(id).value === "") {
+  for (let id of ["awalFc", "awalNasi"]) {
+    const el = document.getElementById(id);
+    if (!el || el.value === "") {
       await customAlert(
-        "Pastikan semua form stok dan penjualan terisi dengan benar (minimal 0).",
+        "Pastikan semua form stok awal terisi dengan benar (minimal 0).",
         "Form Belum Lengkap",
         "warning",
       );
       return false;
     }
   }
+
+  const salesInputs = document.querySelectorAll(".product-sales-qty");
+  for (let input of salesInputs) {
+    if (input.value === "") {
+      await customAlert(
+        "Pastikan semua kolom penjualan produk terisi dengan angka (minimal 0).",
+        "Form Belum Lengkap",
+        "warning",
+      );
+      input.focus();
+      return false;
+    }
+  }
+
   return true;
 };
 
 // --- 4. FORMAT DATA GENERATOR ---
 const getRawData = () => {
+  const items = currentProducts.map((p) => {
+    const input =
+      document.getElementById(`jual_${p.id}`) ||
+      (p.id === "fc" ? document.getElementById("jualFc") : null) ||
+      (p.id === "geprek" ? document.getElementById("jualGeprek") : null) ||
+      (p.id === "nasi" ? document.getElementById("jualNasi") : null);
+
+    const qty = parseInt(input?.value) || 0;
+    return {
+      id: p.id,
+      name: p.name,
+      price: p.price || 0,
+      unit: p.unit || "pcs",
+      qty: qty,
+      subtotal: qty * (p.price || 0),
+      stockType: p.stockType || "none",
+    };
+  });
+
+  const fcItem = items.find((x) => x.id === "fc");
+  const geprekItem = items.find((x) => x.id === "geprek");
+  const nasiItem = items.find((x) => x.id === "nasi");
+
   return {
-    awalFc: document.getElementById("awalFc").value,
-    awalNasi: document.getElementById("awalNasi").value,
-    jualFc: document.getElementById("jualFc").value,
-    jualGeprek: document.getElementById("jualGeprek").value,
-    jualNasi: document.getElementById("jualNasi").value,
+    awalFc: document.getElementById("awalFc")?.value || "0",
+    awalNasi: document.getElementById("awalNasi")?.value || "0",
+    jualFc: fcItem ? fcItem.qty : parseInt(document.getElementById("jualFc")?.value) || 0,
+    jualGeprek: geprekItem ? geprekItem.qty : parseInt(document.getElementById("jualGeprek")?.value) || 0,
+    jualNasi: nasiItem ? nasiItem.qty : parseInt(document.getElementById("jualNasi")?.value) || 0,
+    items: items,
     incomes: Array.from(document.querySelectorAll(".income-item")).map(
       (item) => ({
         desc: item.querySelector(".income-desc").value,
@@ -933,10 +1338,47 @@ const getRawData = () => {
 const generateReportText = () => {
   const raw = getRawData();
   const kasir = kasirInput.value || "-";
-  const totalPenjualan =
-    raw.jualFc * HARGA.fc +
-    raw.jualGeprek * HARGA.geprek +
-    raw.jualNasi * HARGA.nasi;
+
+  let rincianPenjualan = "";
+  let totalPenjualan = 0;
+  let totalSalesQtyFc = 0;
+  let totalSalesQtyNasi = 0;
+
+  const items =
+    raw.items && raw.items.length > 0
+      ? raw.items
+      : currentProducts.map((p) => {
+          const q =
+            p.id === "fc"
+              ? parseInt(raw.jualFc) || 0
+              : p.id === "geprek"
+                ? parseInt(raw.jualGeprek) || 0
+                : p.id === "nasi"
+                  ? parseInt(raw.jualNasi) || 0
+                  : 0;
+          return {
+            id: p.id,
+            name: p.name,
+            price: p.price,
+            unit: p.unit || "pcs",
+            qty: q,
+            subtotal: q * p.price,
+            stockType: p.stockType,
+          };
+        });
+
+  items.forEach((item) => {
+    totalPenjualan += item.subtotal;
+    if (item.stockType === "fc") totalSalesQtyFc += item.qty;
+    if (item.stockType === "nasi") totalSalesQtyNasi += item.qty;
+
+    rincianPenjualan += `${item.name}
+Terjual : ${item.qty} ${item.unit || "pcs"}
+Harga : Rp${formatNumber(item.price)}
+Subtotal : Rp${formatNumber(item.subtotal)}
+
+`;
+  });
 
   let daftarPemasukan = "",
     totalInc = 0;
@@ -961,6 +1403,9 @@ const generateReportText = () => {
       }
     });
 
+  const sisaFc = parseInt(raw.awalFc) - totalSalesQtyFc;
+  const sisaNasi = parseInt(raw.awalNasi) - totalSalesQtyNasi;
+
   return `📋 *LAPORAN REKAP PENJUALAN PM FRIED CHICKEN*
 
 📅 Hari/Tanggal : ${document.getElementById("hari").value}, ${document.getElementById("tanggal").value}
@@ -973,26 +1418,11 @@ const generateReportText = () => {
 ━━━━━━━━━━━━━━
 🍗 RINCIAN PENJUALAN
 
-Fried Chicken
-Terjual : ${raw.jualFc} pcs
-Harga : Rp10.000
-Subtotal : Rp${formatNumber(raw.jualFc * HARGA.fc)}
-
-Ayam Geprek
-Terjual : ${raw.jualGeprek} porsi
-Harga : Rp13.000
-Subtotal : Rp${formatNumber(raw.jualGeprek * HARGA.geprek)}
-
-Nasi
-Terjual : ${raw.jualNasi} porsi
-Harga : Rp3.000
-Subtotal : Rp${formatNumber(raw.jualNasi * HARGA.nasi)}
-
-Total Penjualan : Rp${formatNumber(totalPenjualan)}
+${rincianPenjualan}Total Penjualan : Rp${formatNumber(totalPenjualan)}
 ━━━━━━━━━━━━━━
 📦 SISA STOK AKHIR
-• Fried Chicken : ${raw.awalFc - (parseInt(raw.jualFc) + parseInt(raw.jualGeprek))} pcs
-• Nasi : ${raw.awalNasi - parseInt(raw.jualNasi)} porsi
+• Fried Chicken : ${sisaFc} pcs
+• Nasi : ${sisaNasi} porsi
 ━━━━━━━━━━━━━━
 💵 PEMASUKAN LAINNYA
 ${daftarPemasukan}Total Pemasukan Lainnya : Rp${formatNumber(totalInc)}
@@ -1040,21 +1470,64 @@ const generateDetailTableHTML = (item, isAdmin = false) => {
 
   const stokAwalFc = parseInt(raw.awalFc) || 0;
   const stokAwalNasi = parseInt(raw.awalNasi) || 0;
-  const jualFc = parseInt(raw.jualFc) || 0;
-  const jualGeprek = parseInt(raw.jualGeprek) || 0;
-  const jualNasi = parseInt(raw.jualNasi) || 0;
 
-  const stokAkhirFc = stokAwalFc - (jualFc + jualGeprek);
-  const stokAkhirNasi = stokAwalNasi - jualNasi;
+  let salesRowsHtml = "";
+  let computedPenjualan = 0;
+  let totalFcSold = 0;
+  let totalNasiSold = 0;
 
-  const subFc = jualFc * HARGA.fc;
-  const subGeprek = jualGeprek * HARGA.geprek;
-  const subNasi = jualNasi * HARGA.nasi;
+  if (raw.items && Array.isArray(raw.items) && raw.items.length > 0) {
+    raw.items.forEach((p) => {
+      const q = p.qty || 0;
+      const pr = p.price || 0;
+      const sub = p.subtotal !== undefined ? p.subtotal : q * pr;
+      computedPenjualan += sub;
+      if (p.stockType === "fc") totalFcSold += q;
+      if (p.stockType === "nasi") totalNasiSold += q;
+
+      salesRowsHtml += `
+        <div class="sales-row-detail">
+          <span>${p.name} (${q} ${p.unit || "pcs"} @ ${formatNumber(pr)})</span>
+          <strong>${money(sub)}</strong>
+        </div>
+      `;
+    });
+  } else {
+    const jualFc = parseInt(raw.jualFc) || 0;
+    const jualGeprek = parseInt(raw.jualGeprek) || 0;
+    const jualNasi = parseInt(raw.jualNasi) || 0;
+
+    const subFc = jualFc * HARGA.fc;
+    const subGeprek = jualGeprek * HARGA.geprek;
+    const subNasi = jualNasi * HARGA.nasi;
+
+    computedPenjualan = subFc + subGeprek + subNasi;
+    totalFcSold = jualFc + jualGeprek;
+    totalNasiSold = jualNasi;
+
+    salesRowsHtml = `
+      <div class="sales-row-detail">
+        <span>Fried Chicken (${jualFc} pcs @ ${formatNumber(HARGA.fc)})</span>
+        <strong>${money(subFc)}</strong>
+      </div>
+      <div class="sales-row-detail">
+        <span>Ayam Geprek (${jualGeprek} porsi @ ${formatNumber(HARGA.geprek)})</span>
+        <strong>${money(subGeprek)}</strong>
+      </div>
+      <div class="sales-row-detail">
+        <span>Nasi (${jualNasi} porsi @ ${formatNumber(HARGA.nasi)})</span>
+        <strong>${money(subNasi)}</strong>
+      </div>
+    `;
+  }
+
+  const stokAkhirFc = stokAwalFc - totalFcSold;
+  const stokAkhirNasi = stokAwalNasi - totalNasiSold;
 
   const totalInc = incomes.reduce((s, i) => s + (i?.amount || 0), 0);
   const totalExp = expenses.reduce((s, e) => s + (e?.amount || 0), 0);
-  const saldoAkhir = item?.saldoAkhir ?? 0;
-  const totalPenjualanKotor = item?.penjualan ?? subFc + subGeprek + subNasi;
+  const saldoAkhir = item?.saldoAkhir ?? (computedPenjualan + totalInc - totalExp);
+  const totalPenjualanKotor = item?.penjualan ?? computedPenjualan;
 
   const renderChips = (arr, emptyText, type) => {
     if (!arr.length) return `<span class="detail-empty-text">${emptyText}</span>`;
@@ -1118,18 +1591,7 @@ const generateDetailTableHTML = (item, isAdmin = false) => {
         <div class="detail-subcard">
           <div class="subcard-title"><i class="fa-solid fa-bag-shopping text-primary"></i> Rincian Penjualan</div>
           <div class="detail-sales-table">
-            <div class="sales-row-detail">
-              <span>Fried Chicken (${jualFc} pcs @ 10rb)</span>
-              <strong>${money(subFc)}</strong>
-            </div>
-            <div class="sales-row-detail">
-              <span>Ayam Geprek (${jualGeprek} porsi @ 13rb)</span>
-              <strong>${money(subGeprek)}</strong>
-            </div>
-            <div class="sales-row-detail">
-              <span>Nasi (${jualNasi} porsi @ 3rb)</span>
-              <strong>${money(subNasi)}</strong>
-            </div>
+            ${salesRowsHtml}
             <div class="sales-row-detail total">
               <span>Total Penjualan Kotor</span>
               <strong class="text-green">${money(totalPenjualanKotor)}</strong>
@@ -1620,9 +2082,24 @@ const loadDataForEdit = async (data) => {
   document.getElementById("kasir").value = data.kasir;
   document.getElementById("awalFc").value = parsedRaw.awalFc;
   document.getElementById("awalNasi").value = parsedRaw.awalNasi;
-  document.getElementById("jualFc").value = parsedRaw.jualFc;
-  document.getElementById("jualGeprek").value = parsedRaw.jualGeprek;
-  document.getElementById("jualNasi").value = parsedRaw.jualNasi;
+
+  if (parsedRaw.items && Array.isArray(parsedRaw.items)) {
+    parsedRaw.items.forEach((item) => {
+      const input =
+        document.getElementById(`jual_${item.id}`) ||
+        (item.id === "fc" ? document.getElementById("jualFc") : null) ||
+        (item.id === "geprek" ? document.getElementById("jualGeprek") : null) ||
+        (item.id === "nasi" ? document.getElementById("jualNasi") : null);
+      if (input) input.value = item.qty || 0;
+    });
+  } else {
+    if (document.getElementById("jualFc"))
+      document.getElementById("jualFc").value = parsedRaw.jualFc || 0;
+    if (document.getElementById("jualGeprek"))
+      document.getElementById("jualGeprek").value = parsedRaw.jualGeprek || 0;
+    if (document.getElementById("jualNasi"))
+      document.getElementById("jualNasi").value = parsedRaw.jualNasi || 0;
+  }
 
   const incList = document.getElementById("incomeList");
   const expList = document.getElementById("expenseList");
@@ -1724,6 +2201,7 @@ document.getElementById("btnBatalEdit").addEventListener("click", async () => {
 
 // --- 8. DASHBOARD ADMIN (OWNER VIEW) ---
 const renderAdminDashboard = () => {
+  renderAdminProductGrid();
   const container = document.getElementById("adminHistoryContainer");
 
   if (firebaseReady && !window.isUsingLocalStorage && !firebaseDataLoaded) {
