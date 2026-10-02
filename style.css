@@ -622,18 +622,19 @@ h1, h2, h3, h4, h5, h6 {
 .login-logo-img {
   width: 82px;
   height: 82px;
-  object-fit: contain;
-  padding: 6px;
-  border: 2px solid var(--border-color);
+  object-fit: cover;
+  padding: 0;
+  border: 3px solid var(--secondary);
   border-radius: var(--radius-full);
-  background: var(--card-bg-subtle);
-  box-shadow: var(--shadow-xs);
-  transition: border-color 0.2s ease, transform 0.2s ease;
+  background: var(--white);
+  box-shadow: 0 4px 12px rgba(214, 40, 40, 0.15);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  display: block;
 }
 
 .login-logo-img:hover {
-  border-color: var(--primary);
-  transform: scale(1.04);
+  transform: scale(1.05);
+  box-shadow: 0 6px 18px rgba(214, 40, 40, 0.25);
 }
 
 .login-card h2 {
@@ -2614,14 +2615,18 @@ html.has-saved-session #view-login {
   flex-direction: column;
   align-items: center;
   text-align: center;
-  gap: 16px;
+  gap: 18px;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
   animation: modalCardPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .init-modern-spinner {
   position: relative;
-  width: 88px;
-  height: 88px;
+  width: 104px;
+  height: 104px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2631,7 +2636,7 @@ html.has-saved-session #view-login {
   position: absolute;
   inset: -6px;
   border-radius: 50%;
-  border: 3px solid rgba(214, 40, 40, 0.15);
+  border: 3.5px solid rgba(214, 40, 40, 0.15);
   border-top-color: var(--primary);
   border-right-color: var(--secondary);
   animation: modernSpin 1.4s cubic-bezier(0.5, 0, 0.5, 1) infinite;
@@ -2639,9 +2644,9 @@ html.has-saved-session #view-login {
 
 .init-modern-spinner .spinner-ring-inner {
   position: absolute;
-  inset: 2px;
+  inset: 0px;
   border-radius: 50%;
-  border: 2px solid transparent;
+  border: 2.5px solid transparent;
   border-bottom-color: var(--accent);
   border-left-color: var(--secondary);
   animation: modernSpinReverse 2s linear infinite;
@@ -2649,25 +2654,36 @@ html.has-saved-session #view-login {
 
 .init-modern-spinner .spinner-core-glow {
   position: absolute;
-  inset: 8px;
+  inset: 6px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(247, 184, 1, 0.35) 0%, rgba(214, 40, 40, 0.18) 60%, transparent 80%);
-  filter: blur(6px);
+  background: radial-gradient(circle, rgba(247, 184, 1, 0.45) 0%, rgba(214, 40, 40, 0.25) 60%, transparent 80%);
+  filter: blur(8px);
   animation: logoSplashPulse 2s ease-in-out infinite alternate;
 }
 
 .init-loader-logo {
-  width: 68px;
-  height: 68px;
-  object-fit: contain;
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radius-full);
+  object-fit: cover;
+  border: 3px solid var(--secondary);
+  background: var(--white);
+  box-shadow: 0 4px 14px rgba(214, 40, 40, 0.2);
   position: relative;
   z-index: 3;
-  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.15));
+  display: block;
   animation: logoSplashPulse 2s ease-in-out infinite alternate;
 }
 
+.init-loader-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
 .init-loader-text h3 {
-  font-size: 1.15rem;
+  font-size: 1.18rem;
   font-weight: 800;
   color: var(--text-main);
   margin: 0;
@@ -2675,9 +2691,9 @@ html.has-saved-session #view-login {
 }
 
 .init-loader-text p {
-  font-size: 0.82rem;
+  font-size: 0.84rem;
   color: var(--text-muted);
-  margin: 4px 0 0 0;
+  margin: 0;
   font-weight: 500;
 }
 
