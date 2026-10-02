@@ -3886,7 +3886,7 @@ footer {
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   max-width: 100%;
-  padding-bottom: 2px;
+  padding: 4px 2px;
 }
 
 .admin-filter-pill-wrapper::-webkit-scrollbar {
@@ -3894,29 +3894,23 @@ footer {
 }
 
 .segmented-filter-group {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 4px;
-  background: var(--card-bg);
-  padding: 4px;
-  border-radius: var(--radius-sm);
-  border: 1.5px solid var(--border-color);
-  box-shadow: var(--shadow-sm);
-  min-height: 42px;
+  gap: 8px;
+  background: transparent;
+  padding: 0;
+  border: none;
+  box-shadow: none;
   user-select: none;
-}
-
-body.dark-mode .segmented-filter-group {
-  background: #111827;
-  border-color: rgba(255, 255, 255, 0.12);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+  flex-wrap: nowrap;
+  width: max-content;
 }
 
 .filter-pill {
-  border: none;
-  background: transparent;
-  padding: 7px 15px;
-  border-radius: calc(var(--radius-sm) - 2px);
+  border: 1.5px solid var(--border-color);
+  background: var(--card-bg);
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
   font-size: 0.84rem;
   font-weight: 600;
   color: var(--text-muted);
@@ -3928,17 +3922,26 @@ body.dark-mode .segmented-filter-group {
   white-space: nowrap;
   font-family: inherit;
   line-height: 1.2;
+  box-shadow: var(--shadow-xs);
+  flex-shrink: 0;
+}
+
+body.dark-mode .filter-pill {
+  background: #111827;
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #94a3b8;
 }
 
 .filter-pill i {
   font-size: 0.92rem;
   transition: transform 0.2s ease, color 0.2s ease;
-  opacity: 0.8;
+  opacity: 0.85;
 }
 
 .filter-pill:hover:not(.active) {
   background: var(--card-bg-subtle);
   color: var(--text-main);
+  border-color: var(--text-muted);
   transform: translateY(-1px);
 }
 
@@ -3947,22 +3950,24 @@ body.dark-mode .segmented-filter-group {
   color: var(--primary);
 }
 
-/* Active Segmented Pill - Brand Red/Orange System Theme */
+/* Active Filter Button - Brand Red/Orange Theme */
 .filter-pill.active {
   background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+  border-color: var(--primary);
   color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 4px 12px rgba(214, 40, 40, 0.35);
+  box-shadow: 0 4px 12px rgba(214, 40, 40, 0.3);
 }
 
 .filter-pill.active i {
   color: #F7B801; /* Vibrant gold yellow icon */
   opacity: 1;
-  transform: scale(1.12);
+  transform: scale(1.1);
 }
 
 body.dark-mode .filter-pill.active {
   background: linear-gradient(135deg, var(--primary) 0%, #c94400 100%);
+  border-color: var(--primary);
   color: #ffffff;
   box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
 }

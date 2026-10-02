@@ -1,4 +1,4 @@
-const CACHE_NAME = "pm-rekap-v4.6";
+const CACHE_NAME = "pm-rekap-v4.7";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
