@@ -1,9 +1,7 @@
 {
   "rules": {
-    "reports": {
-      ".read": true,
-      ".write": true,
-      ".validate": "newData.hasChildren(['hari', 'tanggal', 'kasir', 'penjualan', 'saldoAkhir'])"
-    }
+    ".read": true,
+    ".write": true
   }
 }
+
