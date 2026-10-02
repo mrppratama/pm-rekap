@@ -105,6 +105,7 @@ const customAlert = (message, title = "Informasi", type = "info") => {
 
     const handleOk = () => {
       customDialogModal.classList.add("hidden");
+      customDialogModal.style.display = "none";
       if (dialogResolve) {
         const r = dialogResolve;
         dialogResolve = null;
@@ -114,6 +115,7 @@ const customAlert = (message, title = "Informasi", type = "info") => {
 
     document.getElementById("btnDialogOk").onclick = handleOk;
     customDialogModal.classList.remove("hidden");
+    customDialogModal.style.display = "flex";
   });
 };
 
@@ -158,6 +160,7 @@ const customConfirm = (
 
     const handleCancel = () => {
       customDialogModal.classList.add("hidden");
+      customDialogModal.style.display = "none";
       if (dialogResolve) {
         const r = dialogResolve;
         dialogResolve = null;
@@ -167,6 +170,7 @@ const customConfirm = (
 
     const handleConfirm = () => {
       customDialogModal.classList.add("hidden");
+      customDialogModal.style.display = "none";
       if (dialogResolve) {
         const r = dialogResolve;
         dialogResolve = null;
@@ -178,6 +182,7 @@ const customConfirm = (
     document.getElementById("btnDialogConfirm").onclick = handleConfirm;
 
     customDialogModal.classList.remove("hidden");
+    customDialogModal.style.display = "flex";
   });
 };
 
@@ -670,10 +675,14 @@ window.openAddProductModal = () => {
   document.getElementById("prodUnit").value = "pcs";
   document.getElementById("prodStockType").value = "fc";
   document.getElementById("btnDeleteProduct").classList.add("hidden");
+  document.getElementById("btnDeleteProduct").style.display = "none";
   document.getElementById("btnSaveProduct").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Simpan Menu';
 
   const modal = document.getElementById("productModal");
-  if (modal) modal.classList.remove("hidden");
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  }
   setTimeout(() => document.getElementById("prodName")?.focus(), 100);
 };
 
@@ -691,11 +700,15 @@ window.openEditProductModal = (id) => {
 
   const btnDelete = document.getElementById("btnDeleteProduct");
   btnDelete.classList.remove("hidden");
+  btnDelete.style.display = "";
 
   document.getElementById("btnSaveProduct").innerHTML = '<i class="fa-solid fa-floppy-disk"></i> Update Menu';
 
   const modal = document.getElementById("productModal");
-  if (modal) modal.classList.remove("hidden");
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  }
 };
 
 window.handleSaveProduct = async (e) => {
@@ -900,7 +913,7 @@ function hideAppInitLoader() {
     setTimeout(() => {
       loader.style.display = "none";
       document.documentElement.classList.remove("has-saved-session");
-    }, 360);
+    }, 160);
   }
 }
 window.hideAppInitLoader = hideAppInitLoader;

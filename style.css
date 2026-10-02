@@ -589,14 +589,14 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
   position: relative;
 }
 
 .login-logo-halo {
   position: relative;
-  width: 110px;
-  height: 110px;
+  width: 96px;
+  height: 96px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -604,67 +604,58 @@ h1, h2, h3, h4, h5, h6 {
 
 .logo-ambient-glow {
   position: absolute;
-  inset: 4px;
+  inset: 0;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(247, 184, 1, 0.35) 0%, rgba(214, 40, 40, 0.2) 60%, transparent 75%);
-  filter: blur(12px);
+  background: radial-gradient(circle, rgba(247, 184, 1, 0.3) 0%, rgba(214, 40, 40, 0.15) 60%, transparent 75%);
+  filter: blur(8px);
   pointer-events: none;
-  z-index: 1;
-  animation: haloGlowBreath 3.5s ease-in-out infinite alternate;
+  animation: logoSimplePulse 3s ease-in-out infinite alternate;
 }
 
 .logo-ring-pulse {
   position: absolute;
-  inset: -6px;
+  inset: -4px;
   border-radius: 50%;
-  border: 1.5px dashed rgba(247, 184, 1, 0.45);
+  border: 1.5px solid rgba(247, 184, 1, 0.35);
   pointer-events: none;
-  z-index: 2;
-  animation: haloRingPulse 3.5s ease-in-out infinite;
+  animation: logoSimplePulse 3s ease-in-out infinite alternate;
 }
 
 .logo-ring-spin {
   position: absolute;
-  inset: -2px;
+  inset: -1px;
   border-radius: 50%;
   border: 2px solid transparent;
   border-top-color: var(--primary);
   border-right-color: var(--secondary);
-  border-bottom-color: rgba(247, 184, 1, 0.25);
   pointer-events: none;
-  z-index: 2;
-  animation: haloSpin 8s linear infinite;
+  animation: logoSimpleSpin 6s linear infinite;
 }
 
 .login-logo-img {
   position: relative;
-  z-index: 3;
-  width: 86px;
-  height: 86px;
+  z-index: 2;
+  width: 82px;
+  height: 82px;
   object-fit: contain;
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.12));
   background: transparent;
   border: none;
+  transition: transform 0.3s ease;
 }
 
 .login-logo-halo:hover .login-logo-img {
-  transform: scale(1.1) rotate(4deg);
+  transform: scale(1.06);
 }
 
-@keyframes haloSpin {
+@keyframes logoSimpleSpin {
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
 
-@keyframes haloRingPulse {
-  0%, 100% { transform: scale(1); opacity: 0.45; }
-  50% { transform: scale(1.08); opacity: 0.95; }
-}
-
-@keyframes haloGlowBreath {
-  0% { transform: scale(0.95); opacity: 0.55; }
-  100% { transform: scale(1.15); opacity: 0.95; }
+@keyframes logoSimplePulse {
+  0% { transform: scale(0.96); opacity: 0.55; }
+  100% { transform: scale(1.04); opacity: 0.95; }
 }
 
 .login-card h2 {
