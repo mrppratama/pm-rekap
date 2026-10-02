@@ -3898,8 +3898,8 @@ footer {
   align-items: center;
   gap: 4px;
   background: var(--card-bg);
-  padding: 4px 6px;
-  border-radius: var(--radius-full);
+  padding: 4px;
+  border-radius: var(--radius-sm);
   border: 1.5px solid var(--border-color);
   box-shadow: var(--shadow-sm);
   min-height: 42px;
@@ -3915,8 +3915,8 @@ body.dark-mode .segmented-filter-group {
 .filter-pill {
   border: none;
   background: transparent;
-  padding: 7px 16px;
-  border-radius: var(--radius-full);
+  padding: 7px 15px;
+  border-radius: calc(var(--radius-sm) - 2px);
   font-size: 0.84rem;
   font-weight: 600;
   color: var(--text-muted);
@@ -3969,6 +3969,36 @@ body.dark-mode .filter-pill.active {
 
 body.dark-mode .filter-pill.active i {
   color: #fbbf24;
+}
+
+/* PDF Section Header - Image 3 Style */
+.pdf-section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+/* Dedicated Grey/Slate Back Button for Kelola Menu */
+.btn-back-dashboard {
+  background-color: #475569 !important;
+  color: #ffffff !important;
+  border: 1.5px solid #475569 !important;
+  box-shadow: var(--shadow-xs);
+}
+
+.btn-back-dashboard:hover {
+  background-color: #334155 !important;
+  border-color: #334155 !important;
+  color: #ffffff !important;
+  transform: translateY(-1px);
+}
+
+body.dark-mode .btn-back-dashboard {
+  background-color: #334155 !important;
+  color: #f8fafc !important;
+  border-color: #475569 !important;
 }
 
 /* Admin Custom Date Range Collapsible Panel */
@@ -4034,6 +4064,17 @@ body.dark-mode .admin-custom-date-panel {
   }
 
   .admin-top-toolbar .btn-product-nav {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .pdf-section-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+
+  .pdf-section-header .btn {
     width: 100%;
     justify-content: center;
   }

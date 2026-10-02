@@ -2829,68 +2829,6 @@ const updateAdminChart = (filteredData = null) => {
 };
 
 // --- 9. GENERATE UNDUH LAPORAN PDF ---
-const pdfFilterTypeEl = document.getElementById("pdfFilterType");
-if (pdfFilterTypeEl) {
-  pdfFilterTypeEl.addEventListener("change", function () {
-    const val = this.value;
-    const filterHarian = document.getElementById("filterHarian");
-    const filterBulanan = document.getElementById("filterBulanan");
-    const filterCustom = document.getElementById("filterCustom");
-    const hintEl = document.getElementById("pdfFilterHint");
-
-    if (filterHarian) filterHarian.classList.add("hidden");
-    if (filterBulanan) filterBulanan.classList.add("hidden");
-    if (filterCustom) filterCustom.classList.add("hidden");
-
-    if (val === "active_filter") {
-      if (hintEl) {
-        hintEl.innerHTML = `
-          <i class="fa-solid fa-circle-info"></i>
-          <span>Dokumen PDF akan otomatis disaring sesuai filter periode yang sedang aktif di dashboard utama.</span>
-        `;
-      }
-    } else if (val === "harian") {
-      if (filterHarian) filterHarian.classList.remove("hidden");
-      if (hintEl) {
-        hintEl.innerHTML = `
-          <i class="fa-solid fa-circle-info"></i>
-          <span>Pilih satu tanggal tertentu untuk mencetak rekapan transaksi hari tersebut.</span>
-        `;
-      }
-    } else if (val === "bulanan") {
-      if (filterBulanan) filterBulanan.classList.remove("hidden");
-      if (hintEl) {
-        hintEl.innerHTML = `
-          <i class="fa-solid fa-circle-info"></i>
-          <span>Pilih satu bulan tertentu untuk mencetak semua rekapan transaksi dalam bulan tersebut.</span>
-        `;
-      }
-    } else if (val === "custom") {
-      if (filterCustom) filterCustom.classList.remove("hidden");
-      if (hintEl) {
-        hintEl.innerHTML = `
-          <i class="fa-solid fa-circle-info"></i>
-          <span>Tentukan rentang tanggal mulai dan akhir untuk mencetak dokumen rekapan.</span>
-        `;
-      }
-    } else if (val === "mingguan") {
-      if (hintEl) {
-        hintEl.innerHTML = `
-          <i class="fa-solid fa-circle-info"></i>
-          <span>Mencakup seluruh rekapan transaksi 7 hari terakhir dari hari ini.</span>
-        `;
-      }
-    } else {
-      if (hintEl) {
-        hintEl.innerHTML = `
-          <i class="fa-solid fa-circle-info"></i>
-          <span>Mencakup seluruh data transaksi &amp; rekapan yang tersimpan di sistem database.</span>
-        `;
-      }
-    }
-  });
-}
-
 document.getElementById("btnDownloadPdf").addEventListener("click", async () => {
   if (!allReportsGlobal || allReportsGlobal.length === 0) {
     await customAlert(
@@ -2900,71 +2838,21 @@ document.getElementById("btnDownloadPdf").addEventListener("click", async () => 
     );
     return;
   }
-  const filterType = document.getElementById("pdfFilterType").value;
 
-  let paramHarian = document.getElementById("dateHarian").value;
-  let paramBulanan = document.getElementById("dateBulanan").value;
-  let paramStart = document.getElementById("dateStart").value;
-  let paramEnd = document.getElementById("dateEnd").value;
+  let dataToPrint = filterReportsByDate(
+    allReportsGlobal,
+    adminFilterState.type,
+    adminFilterState.startDate,
+    adminFilterState.endDate,
+  );
 
-  let dataToPrint = [...allReportsGlobal];
-
-  if (filterType === "active_filter") {
-    dataToPrint = filterReportsByDate(
-      allReportsGlobal,
-      adminFilterState.type,
-      adminFilterState.startDate,
-      adminFilterState.endDate,
+  if (dataToPrint.length === 0) {
+    await customAlert(
+      "Tidak ada data laporan yang ditemukan pada periode filter aktif.",
+      "Data Tidak Ditemukan",
+      "info",
     );
-  } else if (filterType === "harian") {
-    if (!paramHarian) {
-      await customAlert(
-        "Mohon pilih tanggal laporan yang ingin dicetak.",
-        "Pilih Tanggal",
-        "warning",
-      );
-      return;
-    }
-    const tgt = new Date(paramHarian);
-    const strTgt = `${tgt.getDate().toString().padStart(2, "0")}/${(tgt.getMonth() + 1).toString().padStart(2, "0")}/${tgt.getFullYear()}`;
-    dataToPrint = dataToPrint.filter((d) => d.tanggal === strTgt);
-  } else if (filterType === "mingguan") {
-    const now = new Date();
-    const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    dataToPrint = dataToPrint.filter((d) => {
-      const dDate = parseIndoDate(d.tanggal);
-      return dDate >= last7Days && dDate <= now;
-    });
-  } else if (filterType === "bulanan") {
-    if (!paramBulanan) {
-      await customAlert(
-        "Mohon pilih bulan laporan yang ingin dicetak.",
-        "Pilih Bulan",
-        "warning",
-      );
-      return;
-    }
-    const parts = paramBulanan.split("-");
-    const strTgt = `${parts[1]}/${parts[0]}`;
-    dataToPrint = dataToPrint.filter((d) => d.tanggal && d.tanggal.includes(strTgt));
-  } else if (filterType === "custom") {
-    if (!paramStart || !paramEnd) {
-      await customAlert(
-        "Mohon lengkapi rentang tanggal mulai dan akhir.",
-        "Rentang Belum Lengkap",
-        "warning",
-      );
-      return;
-    }
-    const startDate = new Date(paramStart);
-    startDate.setHours(0, 0, 0, 0);
-    const endDate = new Date(paramEnd);
-    endDate.setHours(23, 59, 59, 999);
-
-    dataToPrint = dataToPrint.filter((d) => {
-      const dDate = parseIndoDate(d.tanggal);
-      return dDate >= startDate && dDate <= endDate;
-    });
+    return;
   }
 
   if (dataToPrint.length === 0) {

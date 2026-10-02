@@ -626,59 +626,16 @@
             </div>
             <div>
               <h2>Unduh Rekapan Laporan PDF</h2>
-              <p class="section-desc">Pilih rentang periode data yang ingin diekspor ke dalam dokumen cetak PDF.</p>
+              <p class="section-desc">Mencakup data rekap sesuai filter periode dashboard yang sedang aktif.</p>
             </div>
           </div>
-        </div>
-
-        <div class="pdf-form-container">
-          <div class="grid-2 pdf-controls-grid">
-            <div class="form-group">
-              <label><i class="fa-regular fa-calendar"></i> Pilih Rentang Waktu</label>
-              <select id="pdfFilterType" class="form-select">
-                <option value="active_filter" selected>Sesuai Filter Dashboard Aktif</option>
-                <option value="semua">Seluruh Data (Semua Waktu)</option>
-                <option value="harian">Harian (Satu Hari Tertentu)</option>
-                <option value="mingguan">Mingguan (7 Hari Terakhir)</option>
-                <option value="bulanan">Bulanan (Bulan Tertentu)</option>
-                <option value="custom">Kustom (Pilih Rentang Tanggal)</option>
-              </select>
-            </div>
-
-            <div class="form-group hidden" id="filterHarian">
-              <label><i class="fa-regular fa-calendar-check"></i> Pilih Tanggal</label>
-              <input type="date" id="dateHarian" class="calc-input filter-date-field" />
-            </div>
-            <div class="form-group hidden" id="filterBulanan">
-              <label><i class="fa-regular fa-calendar-days"></i> Pilih Bulan</label>
-              <input type="month" id="dateBulanan" class="calc-input filter-date-field" />
-            </div>
-          </div>
-
-          <div class="grid-2 hidden" id="filterCustom" style="margin-top: 14px">
-            <div class="form-group">
-              <label><i class="fa-regular fa-calendar-plus"></i> Dari Tanggal</label>
-              <input type="date" id="dateStart" class="calc-input filter-date-field" />
-            </div>
-            <div class="form-group">
-              <label><i class="fa-regular fa-calendar-minus"></i> Sampai Tanggal</label>
-              <input type="date" id="dateEnd" class="calc-input filter-date-field" />
-            </div>
-          </div>
-
-          <div id="pdfFilterHint" class="pdf-filter-hint">
-            <i class="fa-solid fa-circle-info"></i>
-            <span>Mencakup seluruh data transaksi &amp; rekapan yang tersimpan di sistem database.</span>
-          </div>
-
-          <div class="pdf-actions-bar">
-            <button
-              id="btnDownloadPdf"
-              class="btn btn-orange btn-large btn-pdf-export"
-            >
-              <i class="fa-solid fa-file-arrow-down"></i> Buat &amp; Unduh Laporan PDF
-            </button>
-          </div>
+          <button
+            type="button"
+            id="btnDownloadPdf"
+            class="btn btn-orange btn-small"
+          >
+            <i class="fa-solid fa-file-arrow-down"></i> Buat &amp; Unduh Laporan PDF
+          </button>
         </div>
       </section>
     </main>
@@ -689,7 +646,7 @@
         <button
           id="btnBackToDashboard"
           type="button"
-          class="btn btn-outline btn-small btn-back-dashboard"
+          class="btn btn-secondary btn-small btn-back-dashboard"
           onclick="switchView('admin')"
         >
           <i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard
