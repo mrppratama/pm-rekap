@@ -930,6 +930,30 @@
       </div>
     </div>
 
+    <!-- Modal Dedicated Rincian 1 Laporan (Single Report Focus View) -->
+    <div id="reportDetailModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-content report-detail-modal-card">
+        <div class="modal-header">
+          <div class="report-modal-header-title">
+            <i class="fa-solid fa-file-invoice-dollar text-red"></i>
+            <h2 id="reportModalTitle">Rincian Laporan Kasir</h2>
+          </div>
+          <span class="close-modal" onclick="closeModal('reportDetailModal')">&times;</span>
+        </div>
+        <div class="modal-body report-modal-body" id="reportDetailModalBody">
+          <!-- Dynamic 1 report detail content -->
+        </div>
+        <div class="modal-actions report-modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="closeModal('reportDetailModal')">
+            <i class="fa-solid fa-arrow-left"></i> Tutup
+          </button>
+          <button type="button" class="btn btn-orange" id="btnJumpToTable" onclick="jumpToReportInTable()">
+            <i class="fa-solid fa-table-list"></i> Lihat di Tabel Database
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="firebase-config.js"></script>
     <script src="script.js"></script>
   </body>

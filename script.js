@@ -409,131 +409,144 @@ window.markAllNotificationsAsRead = () => {
   showToast("Semua notifikasi ditandai dibaca");
 };
 
+let currentViewedReportId = null;
+
 window.openNotificationDetail = (notifId, reportId, e) => {
   if (e) {
     if (typeof e.stopPropagation === "function") e.stopPropagation();
     if (typeof e.preventDefault === "function") e.preventDefault();
   }
 
-  // Hapus/tandai dibaca notifikasi ini agar langsung hilang dari daftar unread
-  let list = getNotificationHistory();
-  list = list.filter((n) => n.id !== notifId);
-  saveNotificationHistory(list);
-  updateNotificationBadges();
-  renderNotificationList();
+  // Tandai dibaca & hapus dari list unread
+  if (notifId) {
+    let list = getNotificationHistory();
+    list = list.filter((n) => n.id !== notifId);
+    saveNotificationHistory(list);
+    updateNotificationBadges();
+    renderNotificationList();
+  }
 
-  // Tutup modal notifikasi
+  // Tutup modal notifikasi jika terbuka
   closeModal("notifCenterModal");
+
+  if (!reportId) {
+    showToast("ID Laporan tidak tersedia");
+    return;
+  }
+
+  let report = allReportsGlobal.find((r) => (r.id || r.timestamp?.toString()) === String(reportId));
+  if (!report) {
+    const fallbackReports = JSON.parse(localStorage.getItem("pmReports") || "[]");
+    report = fallbackReports.find((r) => (r.id || r.timestamp?.toString()) === String(reportId));
+  }
+
+  if (!report) {
+    customAlert("Data laporan tidak ditemukan atau telah dihapus.", "Laporan Tidak Ditemukan", "warning");
+    return;
+  }
+
+  displayReportDetailModal(report);
+};
+
+window.displayReportDetailModal = (item) => {
+  currentViewedReportId = item.id || item.timestamp?.toString();
+  const modal = document.getElementById("reportDetailModal");
+  const modalTitle = document.getElementById("reportModalTitle");
+  const modalBody = document.getElementById("reportDetailModalBody");
+
+  if (modalTitle) {
+    modalTitle.innerHTML = `Rincian Laporan: <strong style="color: var(--primary);">${item.kasir || "Kasir"}</strong>`;
+  }
+
+  if (modalBody) {
+    const activeRole = currentAppRole || localStorage.getItem("pm_logged_role") || "kasir";
+    modalBody.innerHTML = generateDetailTableHTML(item, activeRole.startsWith("admin"));
+    const subCloseBtn = modalBody.querySelector(".detail-header-bar .btn");
+    if (subCloseBtn) subCloseBtn.style.display = "none";
+  }
+
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  }
+};
+
+window.jumpToReportInTable = () => {
+  closeModal("reportDetailModal");
+  const reportId = currentViewedReportId;
+  if (!reportId) return;
 
   const currentRole = currentAppRole || localStorage.getItem("pm_logged_role") || "kasir";
 
-  if (currentRole === "admin" || currentRole === "admin-products") {
+  if (currentRole.startsWith("admin")) {
     switchView("admin");
+    adminFilterState.type = "all";
+    adminFilterState.startDate = "";
+    adminFilterState.endDate = "";
+    const adminFilterRange = document.getElementById("adminFilterRange");
+    if (adminFilterRange) adminFilterRange.value = "all";
+    document.getElementById("adminCustomDateWrap")?.classList.add("hidden");
+
+    let sorted = [...allReportsGlobal].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    let idx = sorted.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+    if (idx !== -1) {
+      adminCurrentPage = Math.floor(idx / ITEMS_PER_PAGE) + 1;
+    }
     renderAdminDashboard();
 
-    if (reportId) {
-      setTimeout(() => {
-        // Cek apakah data ada di filter saat ini
-        let filtered = filterReportsByDate(
-          allReportsGlobal,
-          adminFilterState.type,
-          adminFilterState.startDate,
-          adminFilterState.endDate,
-        );
-        let idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
-        
-        // Jika tidak ditemukan karena filter waktu, reset filter ke 'all'
-        if (idx === -1) {
-          adminFilterState.type = "all";
-          adminFilterState.startDate = "";
-          adminFilterState.endDate = "";
-          const adminFilterRange = document.getElementById("adminFilterRange");
-          if (adminFilterRange) adminFilterRange.value = "all";
-          document.getElementById("adminCustomDateWrap")?.classList.add("hidden");
-          renderAdminDashboard();
-          filtered = filterReportsByDate(allReportsGlobal, "all", "", "");
-          idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+    setTimeout(() => {
+      const row = document.getElementById(`admin-detail-${reportId}`);
+      const content = document.getElementById(`admin-content-${reportId}`);
+      if (row && content) {
+        const item = allReportsGlobal.find((r) => (r.id || r.timestamp?.toString()) === reportId);
+        if (item) {
+          content.innerHTML = generateDetailTableHTML(item, true);
+          row.classList.remove("hidden");
         }
-
-        if (idx !== -1) {
-          adminCurrentPage = Math.floor(idx / ITEMS_PER_PAGE) + 1;
-          renderAdminDashboard();
-        }
-
-        setTimeout(() => {
-          // Buka rincian detail secara eksplisit
-          const row = document.getElementById(`admin-detail-${reportId}`);
-          const content = document.getElementById(`admin-content-${reportId}`);
-          if (row && content) {
-            const item = allReportsGlobal.find((r) => (r.id || r.timestamp?.toString()) === reportId);
-            if (item) {
-              content.innerHTML = generateDetailTableHTML(item, true);
-              row.classList.remove("hidden");
-            }
-          }
-          const rowEl = document.getElementById(`admin-row-${reportId}`);
-          if (rowEl) {
-            rowEl.scrollIntoView({ behavior: "smooth", block: "center" });
-            rowEl.classList.add("highlight-row");
-            setTimeout(() => rowEl.classList.remove("highlight-row"), 2500);
-          }
-        }, 150);
-      }, 100);
-    }
+      }
+      const rowEl = document.getElementById(`admin-row-${reportId}`);
+      if (rowEl) {
+        rowEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        rowEl.classList.add("highlight-row");
+        setTimeout(() => rowEl.classList.remove("highlight-row"), 2500);
+      }
+    }, 150);
   } else {
-    // Role kasir
+    // Kasir
     switchView("kasir");
     document.getElementById("view-kasir")?.classList.add("hidden");
     document.getElementById("view-kasir-history")?.classList.remove("hidden");
+    kasirFilterState.type = "all";
+    kasirFilterState.startDate = "";
+    kasirFilterState.endDate = "";
+    const kasirFilterRange = document.getElementById("kasirFilterRange");
+    if (kasirFilterRange) kasirFilterRange.value = "all";
+    document.getElementById("kasirCustomDateWrap")?.classList.add("hidden");
+
+    let sorted = [...allReportsGlobal].sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    let idx = sorted.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+    if (idx !== -1) {
+      kasirCurrentPage = Math.floor(idx / ITEMS_PER_PAGE) + 1;
+    }
     loadKasirHistory();
 
-    if (reportId) {
-      setTimeout(() => {
-        let filtered = filterReportsByDate(
-          allReportsGlobal,
-          kasirFilterState.type,
-          kasirFilterState.startDate,
-          kasirFilterState.endDate,
-        );
-        let idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
-
-        if (idx === -1) {
-          kasirFilterState.type = "all";
-          kasirFilterState.startDate = "";
-          kasirFilterState.endDate = "";
-          const kasirFilterRange = document.getElementById("kasirFilterRange");
-          if (kasirFilterRange) kasirFilterRange.value = "all";
-          document.getElementById("kasirCustomDateWrap")?.classList.add("hidden");
-          loadKasirHistory();
-          filtered = filterReportsByDate(allReportsGlobal, "all", "", "");
-          idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+    setTimeout(() => {
+      const row = document.getElementById(`kasir-detail-${reportId}`);
+      const content = document.getElementById(`content-detail-${reportId}`);
+      if (row && content) {
+        const item = allReportsGlobal.find((r) => (r.id || r.timestamp?.toString()) === reportId);
+        if (item) {
+          content.innerHTML = generateDetailTableHTML(item, false);
+          row.classList.remove("hidden");
         }
-
-        if (idx !== -1) {
-          kasirCurrentPage = Math.floor(idx / ITEMS_PER_PAGE) + 1;
-          loadKasirHistory();
-        }
-
-        setTimeout(() => {
-          // Buka rincian detail secara eksplisit
-          const row = document.getElementById(`kasir-detail-${reportId}`);
-          const content = document.getElementById(`content-detail-${reportId}`);
-          if (row && content) {
-            const item = allReportsGlobal.find((r) => (r.id || r.timestamp?.toString()) === reportId);
-            if (item) {
-              content.innerHTML = generateDetailTableHTML(item, false);
-              row.classList.remove("hidden");
-            }
-          }
-          const rowEl = document.getElementById(`kasir-row-${reportId}`);
-          if (rowEl) {
-            rowEl.scrollIntoView({ behavior: "smooth", block: "center" });
-            rowEl.classList.add("highlight-row");
-            setTimeout(() => rowEl.classList.remove("highlight-row"), 2500);
-          }
-        }, 150);
-      }, 100);
-    }
+      }
+      const rowEl = document.getElementById(`kasir-row-${reportId}`);
+      if (rowEl) {
+        rowEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        rowEl.classList.add("highlight-row");
+        setTimeout(() => rowEl.classList.remove("highlight-row"), 2500);
+      }
+    }, 150);
   }
 };
 
@@ -547,6 +560,7 @@ window.clearAllNotifications = () => {
 async function sendNativeNotification(title, body, tag = "pm-rekap", type = "system", reportId = null) {
   playNotificationSound();
   addNotificationHistory(title, body, type, reportId);
+  showToast(title);
 
   if (!("Notification" in window)) return;
 
@@ -558,32 +572,36 @@ async function sendNativeNotification(title, body, tag = "pm-rekap", type = "sys
 
   if (Notification.permission === "granted") {
     try {
-      if ("serviceWorker" in navigator && navigator.serviceWorker.ready) {
-        const reg = await navigator.serviceWorker.ready;
-        reg.showNotification(title, {
-          body: body,
-          icon: "/icon-192.png",
-          badge: "/favicon-32.png",
-          tag: tag,
-          vibrate: [200, 100, 200],
-          data: { url: "/", reportId: reportId },
-        });
-      } else {
-        const n = new Notification(title, {
-          body: body,
-          icon: "/icon-192.png",
-          tag: tag,
-        });
-        n.onclick = function () {
-          window.focus();
-          this.close();
-          if (reportId) {
-            openNotificationDetail(null, reportId);
+      // In Desktop browsers, standard Web Notification shows the Windows/Mac notification banner immediately
+      const n = new Notification(title, {
+        body: body,
+        icon: "/icon-192.png",
+        badge: "/favicon-32.png",
+        tag: tag + "_" + Date.now(),
+        requireInteraction: false,
+      });
+      n.onclick = function () {
+        window.focus();
+        this.close();
+        if (reportId) {
+          openNotificationDetail(null, reportId);
+        }
+      };
+    } catch (e) {
+      // If direct Notification constructor throws in PWA context, use serviceWorker registration
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.ready.then((reg) => {
+          if (reg) {
+            reg.showNotification(title, {
+              body: body,
+              icon: "/icon-192.png",
+              badge: "/favicon-32.png",
+              tag: tag + "_" + Date.now(),
+              data: { reportId: reportId },
+            });
           }
-        };
+        });
       }
-    } catch (err) {
-      console.warn("Notification error:", err);
     }
   }
 }
@@ -608,8 +626,8 @@ const setupRealtimeListener = () => {
 
           // Trigger notification for Owner when a new report arrives or an existing report is updated
           if (!isInitialRealtimeLoad) {
-            const activeRole = currentAppRole || localStorage.getItem("pm_logged_role");
-            if (activeRole === "admin") {
+            const activeRole = currentAppRole || localStorage.getItem("pm_logged_role") || "";
+            if (activeRole.startsWith("admin")) {
               if (!knownReportTimestamps.has(key)) {
                 // New Report
                 sendNativeNotification(
@@ -619,7 +637,6 @@ const setupRealtimeListener = () => {
                   "report-in",
                   key,
                 );
-                showToast(`🍗 Laporan baru masuk dari ${report.kasir || "Kasir"}!`);
               } else if (knownReportTimestamps.get(key) !== report.timestamp) {
                 // Report Updated / Edited
                 sendNativeNotification(
@@ -629,7 +646,6 @@ const setupRealtimeListener = () => {
                   "report-in",
                   key,
                 );
-                showToast(`✏️ Laporan ${report.kasir || "Kasir"} diperbarui!`);
               }
             }
           }
