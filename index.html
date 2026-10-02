@@ -33,9 +33,34 @@
     <!-- Firebase SDK (compat untuk mendukung kode v8 seperti firebase.database().ref()) -->
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+    <script>
+      // Fast check: cegah flicker / flash layar login saat refresh jika user sudah login
+      if (localStorage.getItem("pm_logged_role")) {
+        document.documentElement.classList.add("has-saved-session");
+      }
+    </script>
   </head>
 
   <body>
+    <!-- App Initial Session Refresh Loader -->
+    <div id="appInitLoader" class="app-init-loader">
+      <div class="init-loader-card">
+        <div class="init-logo-halo">
+          <div class="logo-ambient-glow"></div>
+          <div class="logo-ring-pulse"></div>
+          <div class="logo-ring-spin"></div>
+          <img src="logo.png" alt="PM Fried Chicken" class="init-loader-logo" />
+        </div>
+        <div class="init-loader-text">
+          <h3>PM Fried Chicken</h3>
+          <p>Memuat sistem rekap...</p>
+        </div>
+        <div class="init-spinner-bar">
+          <div class="init-spinner-progress"></div>
+        </div>
+      </div>
+    </div>
+
     <div id="loginBg" class="login-bg"></div>
     <div id="loading" class="loading-overlay hidden">
       <div class="spinner"></div>
@@ -115,7 +140,12 @@
     <main id="view-login" class="container view-section">
       <div class="login-card">
         <div class="login-logo-container">
-          <img src="logo.png" alt="Logo PM" class="login-logo-img" />
+          <div class="login-logo-halo">
+            <div class="logo-ambient-glow"></div>
+            <div class="logo-ring-pulse"></div>
+            <div class="logo-ring-spin"></div>
+            <img src="logo.png" alt="Logo PM" class="login-logo-img" />
+          </div>
         </div>
         <h2>Masuk ke Sistem</h2>
         <p class="login-subtitle">Silakan masukkan PIN pegawai untuk mengakses sistem rekap.</p>
@@ -719,15 +749,36 @@
         </div>
         <div class="modal-body changelog-body">
           <div class="changelog-badge-bar">
-            <span class="badge-ver">Versi 2.4.0</span>
+            <span class="badge-ver">Versi 2.5.0</span>
             <span class="badge-date">Oktober 2026</span>
           </div>
           <ul class="changelog-list">
             <li>
-              <div class="cl-icon"><i class="fa-solid fa-bell text-gold"></i></div>
+              <div class="cl-icon"><i class="fa-solid fa-wand-magic-sparkles text-gold"></i></div>
+              <div class="cl-text">
+                <strong>Animasi Ring Logo &amp; Refresh Halus</strong>
+                <p>Animasi ambient melingkar modern di belakang logo login dan transisi loading refresh mulus tanpa kedip ke layar login.</p>
+              </div>
+            </li>
+            <li>
+              <div class="cl-icon"><i class="fa-solid fa-palette text-blue"></i></div>
+              <div class="cl-text">
+                <strong>Popup Dialog &amp; Alert Sesuai Tema</strong>
+                <p>Semua dialog konfirmasi, alert, dan toast notifikasi kini otomatis berlatar putih bersih pada Mode Terang dan gelap elegan pada Mode Gelap.</p>
+              </div>
+            </li>
+            <li>
+              <div class="cl-icon"><i class="fa-solid fa-utensils text-green"></i></div>
+              <div class="cl-text">
+                <strong>Kelola Menu &amp; Sinkronisasi Harga</strong>
+                <p>Fitur penambahan, pengeditan, dan penghapusan menu produk baru secara realtime bagi Owner/Admin.</p>
+              </div>
+            </li>
+            <li>
+              <div class="cl-icon"><i class="fa-solid fa-bell text-red"></i></div>
               <div class="cl-text">
                 <strong>Notifikasi Realtime Laporan</strong>
-                <p>Notifikasi otomatis pada akun Owner saat ada laporan baru dari Kasir, serta notifikasi pada Kasir saat laporan berhasil dikirim.</p>
+                <p>Notifikasi instan untuk Owner saat laporan masuk dan notifikasi sukses kirim untuk Kasir.</p>
               </div>
             </li>
             <li>

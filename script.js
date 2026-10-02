@@ -761,6 +761,9 @@ window.handleDeleteProduct = async () => {
   const product = currentProducts.find((p) => p.id === editId);
   const prodName = product?.name || "menu ini";
 
+  // Tutup form modal edit produk terlebih dahulu agar tidak bertumpuk dengan dialog konfirmasi
+  closeModal("productModal");
+
   const confirmed = await customConfirm(
     `Apakah Anda yakin ingin menghapus menu "${prodName}" dari sistem?`,
     "Hapus Menu Produk",
@@ -773,7 +776,7 @@ window.handleDeleteProduct = async () => {
     if (firebaseReady && db) {
       try {
         await db.ref(`products/${editId}`).remove();
-        showToast(`✅ Menu "${prodName}" berhasil dihapus`);
+        showToast(`Menu "${prodName}" berhasil dihapus`);
       } catch (err) {
         await customAlert("Gagal menghapus produk: " + err.message, "Gagal Hapus", "error");
         return;
@@ -784,9 +787,8 @@ window.handleDeleteProduct = async () => {
       renderKasirSalesList();
       renderAdminProductGrid();
       calculateAll();
-      showToast(`✅ Menu "${prodName}" berhasil dihapus`);
+      showToast(`Menu "${prodName}" berhasil dihapus`);
     }
-    closeModal("productModal");
   }
 };
 
@@ -891,6 +893,18 @@ const userDropdownAvatar = document.getElementById("userDropdownAvatar");
 const userDropdownName = document.getElementById("userDropdownName");
 const userDropdownBadge = document.getElementById("userDropdownBadge");
 
+function hideAppInitLoader() {
+  const loader = document.getElementById("appInitLoader");
+  if (loader) {
+    loader.classList.add("fade-out");
+    setTimeout(() => {
+      loader.style.display = "none";
+      document.documentElement.classList.remove("has-saved-session");
+    }, 360);
+  }
+}
+window.hideAppInitLoader = hideAppInitLoader;
+
 const switchView = (role) => {
   currentAppRole = role;
   try {
@@ -912,6 +926,9 @@ const switchView = (role) => {
     userAccountWrapper.classList.remove("hidden");
     userAccountWrapper.classList.remove("open");
   }
+
+  // Sembunyikan initial loading screen
+  hideAppInitLoader();
 
   // Request native notification permission if supported
   requestNotificationPermission();
@@ -2781,7 +2798,9 @@ window.closeModal = (id) => {
 
 const showToast = (msg) => {
   const toast = document.getElementById("toast");
-  toast.innerHTML = `<i class="fas fa-check-circle text-green"></i> <span>${msg}</span>`;
+  if (!toast) return;
+  const cleanMsg = msg ? String(msg).replace(/^[✅✨🎉🔔]\s*/, "") : "";
+  toast.innerHTML = `<i class="fa-solid fa-circle-check text-green"></i> <span>${cleanMsg}</span>`;
   toast.classList.remove("hidden");
   toast.classList.add("show");
   setTimeout(() => {
@@ -3181,5 +3200,7 @@ window.addEventListener("DOMContentLoaded", () => {
   const savedRole = localStorage.getItem("pm_logged_role");
   if (savedRole === "kasir" || savedRole === "admin") {
     switchView(savedRole);
+  } else {
+    hideAppInitLoader();
   }
 });
