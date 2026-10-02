@@ -2475,6 +2475,34 @@ select.custom-select-native,
   gap: 4px;
 }
 
+.notif-item-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.btn-notif-read {
+  background: var(--card-bg);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xs);
+  padding: 4px 9px;
+  font-size: 0.76rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: var(--transition);
+}
+
+.btn-notif-read:hover {
+  background: var(--green-light);
+  color: var(--green);
+  border-color: rgba(16, 185, 129, 0.35);
+}
+
 .btn-notif-detail {
   background: var(--primary-light);
   color: var(--primary);

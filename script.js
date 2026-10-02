@@ -355,7 +355,9 @@ function renderNotificationList() {
   const container = document.getElementById("notifListContainer");
   if (!container) return;
 
-  const list = getNotificationHistory();
+  const rawList = getNotificationHistory();
+  // WA behavior: Read / Marked-as-read items are cleared from active unread list
+  const list = rawList.filter((n) => n.unread !== false);
 
   if (!list || list.length === 0) {
     container.innerHTML = `
@@ -382,24 +384,31 @@ function renderNotificationList() {
 
       const actionBtn = hasReport
         ? `<button type="button" class="btn-notif-detail" onclick="openNotificationDetail('${item.id}', '${safeReportId}', event)">
-             <i class="fa-solid fa-file-lines"></i> Lihat Rincian Laporan
+             <i class="fa-solid fa-file-lines"></i> Rincian
            </button>`
         : "";
 
+      const markReadBtn = `<button type="button" class="btn-notif-read" onclick="markSingleNotificationAsRead('${item.id}', event)" title="Tandai Dibaca">
+             <i class="fa-solid fa-check"></i> Tandai Dibaca
+           </button>`;
+
       return `
-        <div class="notif-item ${item.unread ? "unread" : ""}" onclick="openNotificationDetail('${item.id}', '${safeReportId}', event)">
+        <div class="notif-item unread" onclick="openNotificationDetail('${item.id}', '${safeReportId}', event)">
           <div class="notif-item-icon ${iconType}">
             <i class="${iconClass}"></i>
           </div>
           <div class="notif-item-content">
             <div class="notif-item-title">
               <span>${item.title}</span>
-              ${item.unread ? '<span class="notif-unread-dot" title="Belum dibaca"></span>' : ""}
+              <span class="notif-unread-dot" title="Belum dibaca"></span>
             </div>
             <p class="notif-item-desc">${item.message}</p>
             <div class="notif-item-footer">
               <span class="notif-item-time"><i class="fa-regular fa-clock"></i> ${item.time}</span>
-              ${actionBtn}
+              <div class="notif-item-actions">
+                ${markReadBtn}
+                ${actionBtn}
+              </div>
             </div>
           </div>
         </div>
@@ -425,10 +434,21 @@ window.showNotificationCenterModal = (e) => {
   }
 };
 
-window.markAllNotificationsAsRead = () => {
-  const list = getNotificationHistory();
-  list.forEach((n) => (n.unread = false));
+window.markSingleNotificationAsRead = (notifId, e) => {
+  if (e) {
+    if (typeof e.stopPropagation === "function") e.stopPropagation();
+    if (typeof e.preventDefault === "function") e.preventDefault();
+  }
+  let list = getNotificationHistory();
+  list = list.filter((n) => n.id !== notifId);
   saveNotificationHistory(list);
+  updateNotificationBadges();
+  renderNotificationList();
+  showToast("Notifikasi ditandai dibaca");
+};
+
+window.markAllNotificationsAsRead = () => {
+  saveNotificationHistory([]);
   updateNotificationBadges();
   renderNotificationList();
   showToast("Semua notifikasi ditandai dibaca");
