@@ -45,18 +45,15 @@
     <!-- App Initial Session Refresh Loader -->
     <div id="appInitLoader" class="app-init-loader">
       <div class="init-loader-card">
-        <div class="init-logo-halo">
-          <div class="logo-ambient-glow"></div>
-          <div class="logo-ring-pulse"></div>
-          <div class="logo-ring-spin"></div>
-          <img src="logo.png" alt="PM Fried Chicken" class="init-loader-logo" />
+        <div class="init-modern-spinner">
+          <div class="spinner-ring-outer"></div>
+          <div class="spinner-ring-inner"></div>
+          <div class="spinner-core-glow"></div>
+          <i class="fa-solid fa-utensils spinner-icon"></i>
         </div>
         <div class="init-loader-text">
           <h3>PM Fried Chicken</h3>
           <p>Memuat sistem rekap...</p>
-        </div>
-        <div class="init-spinner-bar">
-          <div class="init-spinner-progress"></div>
         </div>
       </div>
     </div>
@@ -101,7 +98,7 @@
             <div class="user-dropdown-divider"></div>
             <button type="button" class="user-dropdown-item hidden" id="menuKelolaProduk" onclick="handleUserKelolaProduk(event)">
               <div class="item-left">
-                <i class="fa-solid fa-tags text-primary"></i>
+                <i class="fa-solid fa-utensils text-primary"></i>
                 <span>Kelola Menu Produk</span>
               </div>
             </button>
@@ -504,10 +501,10 @@
         <button
           id="btnGoToProducts"
           type="button"
-          class="btn btn-secondary btn-small"
+          class="btn btn-product-nav btn-small"
           onclick="switchView('admin-products')"
         >
-          <i class="fa-solid fa-tags text-primary"></i> Kelola Menu &amp; Harga Produk
+          <i class="fa-solid fa-utensils"></i> Kelola Menu &amp; Setting Harga
         </button>
       </div>
 
@@ -689,7 +686,7 @@
         <button
           id="btnBackToDashboard"
           type="button"
-          class="btn btn-secondary btn-small"
+          class="btn btn-outline btn-small btn-back-dashboard"
           onclick="switchView('admin')"
         >
           <i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard
@@ -698,19 +695,19 @@
 
       <section class="card product-mgmt-card">
         <div class="product-mgmt-header">
-          <div class="product-header-title-wrap">
+          <div class="product-header-top-row">
             <div class="product-mgmt-icon-badge">
-              <i class="fa-solid fa-tags"></i>
+              <i class="fa-solid fa-utensils"></i>
             </div>
-            <div>
-              <div class="product-title-row">
+            <div class="product-title-group">
+              <div class="product-title-and-badge">
                 <h2>Kelola Menu &amp; Setting Harga</h2>
                 <span class="badge-count" id="productCountBadge">3 Menu Produk</span>
               </div>
-              <p class="section-desc">Atur nama menu, harga satuan, dan pengaitan pengurangan stok produk. Semua perubahan tersinkron realtime ke form kasir.</p>
+              <p class="section-desc">Atur nama menu, harga satuan, dan pengurangan stok. Tersinkron realtime ke kasir.</p>
             </div>
           </div>
-          <button type="button" class="btn btn-primary btn-small btn-add-product" id="btnOpenAddProduct" onclick="openAddProductModal()">
+          <button type="button" class="btn btn-primary btn-add-product" id="btnOpenAddProduct" onclick="openAddProductModal()">
             <i class="fa-solid fa-circle-plus"></i> Tambah Menu Baru
           </button>
         </div>

@@ -767,7 +767,7 @@ const renderAdminProductGrid = () => {
           </div>
         </div>
         <div class="prod-card-footer">
-          <button type="button" class="btn btn-small btn-secondary btn-full" onclick="openEditProductModal('${p.id}')">
+          <button type="button" class="btn btn-small btn-edit-product btn-full" onclick="openEditProductModal('${p.id}')">
             <i class="fa-solid fa-pen-to-square"></i> Edit Menu &amp; Harga
           </button>
         </div>
@@ -781,7 +781,7 @@ const renderAdminProductGrid = () => {
 window.openAddProductModal = () => {
   document.getElementById("prodEditId").value = "";
   document.getElementById("productModalTitle").textContent = "Tambah Menu Baru";
-  document.getElementById("productModalIcon").className = "fa-solid fa-tags text-primary";
+  document.getElementById("productModalIcon").className = "fa-solid fa-utensils text-primary";
   document.getElementById("prodName").value = "";
   document.getElementById("prodPrice").value = "";
   document.getElementById("prodUnit").value = "pcs";
