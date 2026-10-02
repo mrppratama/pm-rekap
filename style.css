@@ -3287,7 +3287,25 @@ footer {
   border: 1px solid var(--border-color);
 }
 
-/* Product Management & Dedicated View Styles */
+/* Navigation Buttons Styles */
+.btn-db-nav {
+  background: linear-gradient(135deg, #E65100 0%, #D62828 100%) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(230, 81, 0, 0.28) !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  transition: var(--transition-bounce) !important;
+}
+
+.btn-db-nav:hover {
+  background: linear-gradient(135deg, #c94400 0%, #b01e1e 100%) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 16px rgba(230, 81, 0, 0.38) !important;
+}
+
 .btn-product-nav {
   background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%) !important;
   color: #ffffff !important;
@@ -3634,47 +3652,130 @@ footer {
 
 /* Dedicated Report Detail Modal Styles */
 .report-detail-modal-card {
-  max-width: 820px;
-  width: 95%;
+  max-width: 980px !important;
+  width: 95% !important;
   max-height: 90vh;
   display: flex;
   flex-direction: column;
   border-radius: var(--radius-lg);
   background: var(--card-bg);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--border-color);
 }
 
 .report-modal-header-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 .report-modal-header-title h2 {
-  font-size: 1.2rem;
+  font-size: 1.22rem;
   margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.badge-time-modal {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  background: var(--card-bg-subtle);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-color);
 }
 
 .report-modal-body {
-  padding: 16px;
+  padding: 20px 22px;
   overflow-y: auto;
-  max-height: calc(90vh - 135px);
+  max-height: calc(90vh - 145px);
+  background: var(--bg-color);
+}
+
+/* Clear duplicate inner headers inside modal */
+.report-detail-modal-card .detail-card-panel {
+  background: transparent;
+  border: none;
+  padding: 0;
+  margin: 0;
+  box-shadow: none;
+  gap: 16px;
+}
+
+.report-detail-modal-card .detail-header-bar {
+  display: none !important;
+}
+
+/* Force 2-column layout inside detail modal so subcards have plenty of width */
+.report-detail-modal-card .detail-grid-cards {
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  gap: 18px !important;
+}
+
+.report-detail-modal-card .detail-subcard {
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+}
+
+.report-detail-modal-card .detail-stock-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.report-detail-modal-card .detail-kpi-strip {
+  background: var(--card-bg);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 16px 20px;
+  box-shadow: var(--shadow-sm);
 }
 
 .report-modal-actions {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 12px;
-  padding: 14px 20px;
+  gap: 14px;
+  padding: 14px 22px;
   border-top: 1px solid var(--border-color);
-  background: var(--card-bg-subtle);
+  background: var(--card-bg);
   border-bottom-left-radius: var(--radius-lg);
   border-bottom-right-radius: var(--radius-lg);
 }
 
-@media (max-width: 600px) {
+@media (max-width: 768px) {
+  .report-detail-modal-card {
+    width: 96% !important;
+    max-height: 92vh;
+    padding: 14px 12px;
+  }
+
+  .report-modal-body {
+    padding: 12px 6px;
+  }
+
+  .report-detail-modal-card .detail-grid-cards {
+    grid-template-columns: 1fr !important;
+    gap: 12px !important;
+  }
+
+  .report-detail-modal-card .detail-stock-row {
+    grid-template-columns: 1fr;
+  }
+
   .report-modal-actions {
     flex-direction: column-reverse;
+    padding: 12px 14px;
   }
   
   .report-modal-actions .btn {

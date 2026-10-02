@@ -455,13 +455,16 @@ window.displayReportDetailModal = (item) => {
   const modalBody = document.getElementById("reportDetailModalBody");
 
   if (modalTitle) {
-    modalTitle.innerHTML = `Rincian Laporan: <strong style="color: var(--primary);">${item.kasir || "Kasir"}</strong>`;
+    modalTitle.innerHTML = `
+      <span>Rincian Laporan: <strong style="color: var(--primary);">${item.kasir || "Kasir"}</strong></span>
+      <span class="badge-time-modal"><i class="fa-regular fa-calendar-check"></i> ${item.hari || ""}, ${item.tanggal || ""} &bull; ${item.jam || ""}</span>
+    `;
   }
 
   if (modalBody) {
     const activeRole = currentAppRole || localStorage.getItem("pm_logged_role") || "kasir";
     modalBody.innerHTML = generateDetailTableHTML(item, activeRole.startsWith("admin"));
-    const subCloseBtn = modalBody.querySelector(".detail-header-bar .btn");
+    const subCloseBtn = modalBody.querySelector(".detail-header-bar");
     if (subCloseBtn) subCloseBtn.style.display = "none";
   }
 
@@ -2277,24 +2280,16 @@ const loadKasirHistory = () => {
   container.innerHTML = html;
 };
 
-window.toggleDetailKasir = async (id) => {
-  const row = document.getElementById(`kasir-detail-${id}`);
-  const content = document.getElementById(`content-detail-${id}`);
-
-  if (row.classList.contains("hidden")) {
-    const item = allReportsGlobal.find((r) => r.id === id);
-    if (item) {
-      content.innerHTML = generateDetailTableHTML(item, false);
-      row.classList.remove("hidden");
-    } else {
-      await customAlert(
-        "Data rincian laporan tidak ditemukan atau telah dihapus.",
-        "Data Tidak Ditemukan",
-        "warning",
-      );
-    }
+window.toggleDetailKasir = (id) => {
+  const item = allReportsGlobal.find((r) => (r.id || r.timestamp?.toString()) === String(id));
+  if (item) {
+    displayReportDetailModal(item);
   } else {
-    row.classList.add("hidden");
+    customAlert(
+      "Data rincian laporan tidak ditemukan atau telah dihapus.",
+      "Data Tidak Ditemukan",
+      "warning",
+    );
   }
 };
 
@@ -2642,24 +2637,16 @@ const renderAdminDashboard = () => {
   container.innerHTML = html;
 };
 
-window.toggleAdminDetail = async (id) => {
-  const row = document.getElementById(`admin-detail-${id}`);
-  const content = document.getElementById(`admin-content-${id}`);
-
-  if (row.classList.contains("hidden")) {
-    const item = allReportsGlobal.find((r) => (r.id || r.timestamp?.toString()) === id);
-    if (item) {
-      content.innerHTML = generateDetailTableHTML(item, true);
-      row.classList.remove("hidden");
-    } else {
-      await customAlert(
-        "Data rincian laporan tidak ditemukan.",
-        "Data Tidak Ditemukan",
-        "warning",
-      );
-    }
+window.toggleAdminDetail = (id) => {
+  const item = allReportsGlobal.find((r) => (r.id || r.timestamp?.toString()) === String(id));
+  if (item) {
+    displayReportDetailModal(item);
   } else {
-    row.classList.add("hidden");
+    customAlert(
+      "Data rincian laporan tidak ditemukan.",
+      "Data Tidak Ditemukan",
+      "warning",
+    );
   }
 };
 
