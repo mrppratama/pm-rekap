@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PM Fried Chicken - Sistem Rekap</title>
+    <link rel="icon" type="image/png" href="logo.png" />
+    <link rel="shortcut icon" type="image/png" href="logo.png" />
+    <link rel="apple-touch-icon" href="logo.png" />
+    <link rel="apple-touch-icon" sizes="192x192" href="logo.png" />
+    <link rel="apple-touch-icon" sizes="512x512" href="logo.png" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="PM Rekap" />
+    <meta name="application-name" content="PM Rekap" />
+    <meta name="theme-color" content="#D62828" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+      rel="stylesheet"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="style.css" />
+    <link rel="manifest" href="manifest.json" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Firebase SDK (compat untuk mendukung kode v8 seperti firebase.database().ref()) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.0/firebase-database-compat.js"></script>
+  </head>
+
+  <body>
+    <div id="loginBg" class="login-bg"></div>
+    <div id="loading" class="loading-overlay hidden">
+      <div class="spinner"></div>
+    </div>
+    <div id="toast" class="toast hidden"></div>
+
+    <header class="app-header" id="appHeader">
+      <div class="header-content">
+        <div class="logo-container">
+          <img src="logo.png" alt="Logo PM" class="logo-img" />
+        </div>
+        <div class="header-text">
+          <h1 id="mainTitle">PM Fried Chicken Kendayakan</h1>
+          <p id="subTitle">Sistem Rekap Penjualan Harian</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <!-- User Account Profile Card & Dropdown -->
+        <div class="user-account-wrapper hidden" id="userAccountWrapper">
+          <button type="button" class="user-account-btn" id="btnUserAccount" onclick="toggleUserAccountMenu(event)" title="Menu Akun">
+            <div class="user-avatar-badge" id="userAvatarText">K</div>
+            <div class="user-account-info">
+              <span class="user-account-name" id="userAccountName">Kasir</span>
+              <span class="user-account-role" id="userAccountRole">Aktif</span>
+            </div>
+            <i class="fa-solid fa-chevron-down user-chevron"></i>
+          </button>
+          
+          <div class="user-account-dropdown" id="userAccountDropdown" onclick="event.stopPropagation()">
+            <div class="user-dropdown-header">
+              <div class="user-dropdown-avatar" id="userDropdownAvatar">K</div>
+              <div class="user-dropdown-meta">
+                <strong id="userDropdownName">Kasir PMFC</strong>
+                <span class="user-dropdown-badge" id="userDropdownBadge">Kasir Aktif</span>
+              </div>
+            </div>
+            <div class="user-dropdown-divider"></div>
+            <button type="button" class="user-dropdown-item" id="menuToggleTheme" onclick="handleUserThemeToggle(event)">
+              <div class="item-left">
+                <i class="fas fa-moon" id="menuThemeIcon"></i>
+                <span id="menuThemeText">Mode Gelap</span>
+              </div>
+            </button>
+            <button type="button" class="user-dropdown-item" id="menuInstallApp" onclick="handleUserInstallApp(event)">
+              <div class="item-left">
+                <i class="fa-solid fa-download" id="menuInstallIcon"></i>
+                <span id="menuInstallText">Install Aplikasi</span>
+              </div>
+              <span class="pwa-badge">PWA</span>
+            </button>
+            <div class="user-dropdown-divider"></div>
+            <button type="button" class="user-dropdown-item text-danger" id="menuLogout" onclick="handleUserLogout(event)">
+              <div class="item-left">
+                <i class="fa-solid fa-arrow-right-from-bracket"></i>
+                <span>Keluar Akun</span>
+              </div>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main id="view-login" class="container view-section">
+      <div class="login-card">
+        <div class="login-logo-container">
+          <img src="logo.png" alt="Logo PM" class="login-logo-img" />
+        </div>
+        <h2>Masuk ke Sistem</h2>
+        <p class="login-subtitle">Silakan masukkan PIN pegawai untuk mengakses sistem rekap.</p>
+        
+        <div class="login-pin-input-wrapper">
+          <input
+            type="password"
+            id="loginPin"
+            placeholder="Masukkan PIN"
+            class="login-input"
+            maxlength="4"
+            autocomplete="off"
+          />
+        </div>
+        
+        <button
+          id="btnLogin"
+          type="button"
+          class="btn btn-yellow btn-full"
+          style="font-size: 1.1rem; font-weight: 700; height: 50px; color: #1a1a1a;"
+        >
+          <i class="fas fa-sign-in-alt"></i> Masuk
+        </button>
+      </div>
+    </main>
+
+    <main id="view-kasir" class="container view-section hidden">
+      <div class="top-action-bar">
+        <button
+          id="btnRiwayat"
+          type="button"
+          class="btn btn-secondary btn-small"
+        >
+          <i class="fas fa-database"></i> Lihat Riwayat Database
+        </button>
+      </div>
+
+      <section class="card">
+        <h2><i class="fas fa-info-circle"></i> Informasi Umum</h2>
+        <div class="grid-4 info-grid">
+          <div class="form-group">
+            <label><i class="fas fa-calendar-day"></i> Hari</label>
+            <input type="text" id="hari" readonly class="readonly-input" />
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-calendar-alt"></i> Tanggal</label>
+            <input type="text" id="tanggal" readonly class="readonly-input" />
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-clock"></i> Jam</label>
+            <input type="text" id="jam" readonly class="readonly-input" />
+          </div>
+          <div class="form-group">
+            <label><i class="fas fa-user-edit"></i> Nama Kasir <span class="text-red">*</span></label>
+            <input
+              type="text"
+              id="kasir"
+              placeholder="Contoh: Budi"
+              required
+              autocomplete="off"
+            />
+          </div>
+        </div>
+      </section>
+
+      <div class="grid-2-desktop">
+        <div class="col-left">
+          <section class="card">
+            <h2><i class="fas fa-box-open"></i> Stok Awal</h2>
+            <div class="grid-2">
+              <div class="form-group">
+                <label>Fried Chicken (pcs) <span class="text-red">*</span></label>
+                <div class="qty-control">
+                  <button type="button" class="btn-qty minus">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <input
+                    type="number"
+                    id="awalFc"
+                    class="calc-input"
+                    value="0"
+                    required
+                  />
+                  <button type="button" class="btn-qty plus">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Nasi (porsi) <span class="text-red">*</span></label>
+                <div class="qty-control">
+                  <button type="button" class="btn-qty minus">
+                    <i class="fas fa-minus"></i>
+                  </button>
+                  <input
+                    type="number"
+                    id="awalNasi"
+                    class="calc-input"
+                    value="0"
+                    required
+                  />
+                  <button type="button" class="btn-qty plus">
+                    <i class="fas fa-plus"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="card highlight-card">
+            <h2><i class="fas fa-boxes"></i> Sisa Stok Akhir (Otomatis)</h2>
+            <div class="grid-2">
+              <div class="stat-box">
+                <span>Sisa Fried Chicken</span>
+                <h3 id="akhirFc">0</h3>
+                <small class="text-muted">pcs tersisa</small>
+              </div>
+              <div class="stat-box">
+                <span>Sisa Nasi</span>
+                <h3 id="akhirNasi">0</h3>
+                <small class="text-muted">porsi tersisa</small>
+              </div>
+            </div>
+          </section>
+        </div>
+
+        <div class="col-right">
+          <section class="card h-full">
+            <h2><i class="fas fa-shopping-cart"></i> Penjualan Hari Ini</h2>
+            <div class="sales-list">
+              <div class="sales-item">
+                <div class="sales-info">
+                  <strong>Fried Chicken</strong>
+                  <span class="price-tag">@ Rp10.000</span>
+                </div>
+                <div class="sales-controls">
+                  <div class="qty-control">
+                    <button type="button" class="btn-qty minus">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <input
+                      type="number"
+                      id="jualFc"
+                      class="calc-input"
+                      value="0"
+                      required
+                    />
+                    <button type="button" class="btn-qty plus">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                  <div class="sales-subtotal" id="subFc">Rp0</div>
+                </div>
+              </div>
+
+              <div class="sales-item">
+                <div class="sales-info">
+                  <strong>Ayam Geprek</strong>
+                  <span class="price-tag">@ Rp13.000</span>
+                </div>
+                <div class="sales-controls">
+                  <div class="qty-control">
+                    <button type="button" class="btn-qty minus">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <input
+                      type="number"
+                      id="jualGeprek"
+                      class="calc-input"
+                      value="0"
+                      required
+                    />
+                    <button type="button" class="btn-qty plus">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                  <div class="sales-subtotal" id="subGeprek">Rp0</div>
+                </div>
+              </div>
+
+              <div class="sales-item">
+                <div class="sales-info">
+                  <strong>Nasi</strong>
+                  <span class="price-tag">@ Rp3.000</span>
+                </div>
+                <div class="sales-controls">
+                  <div class="qty-control">
+                    <button type="button" class="btn-qty minus">
+                      <i class="fas fa-minus"></i>
+                    </button>
+                    <input
+                      type="number"
+                      id="jualNasi"
+                      class="calc-input"
+                      value="0"
+                      required
+                    />
+                    <button type="button" class="btn-qty plus">
+                      <i class="fas fa-plus"></i>
+                    </button>
+                  </div>
+                  <div class="sales-subtotal" id="subNasi">Rp0</div>
+                </div>
+              </div>
+            </div>
+            <div class="total-bar">
+              <span>Total Penjualan Kotor</span>
+              <strong id="totalPenjualan">Rp0</strong>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      <div class="grid-2-desktop">
+        <section class="card">
+          <div class="header-between">
+            <h2><i class="fas fa-hand-holding-usd text-green"></i> Pemasukan Lainnya</h2>
+            <button type="button" id="btnAddIncome" class="btn-small btn-green">
+              <i class="fas fa-plus"></i> Tambah
+            </button>
+          </div>
+          <div id="incomeList"></div>
+          <div class="total-bar">
+            <span>Total Pemasukan</span>
+            <strong id="totalPemasukan" class="text-green">Rp0</strong>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="header-between">
+            <h2><i class="fas fa-receipt text-red"></i> Pengeluaran Operasional</h2>
+            <button type="button" id="btnAddExpense" class="btn-small btn-yellow">
+              <i class="fas fa-plus"></i> Tambah
+            </button>
+          </div>
+          <div id="expenseList"></div>
+          <div class="total-bar expense-bar">
+            <span>Total Pengeluaran</span>
+            <strong id="totalPengeluaran" class="text-red">Rp0</strong>
+          </div>
+        </section>
+      </div>
+
+      <section class="card summary-card">
+        <h2><i class="fas fa-chart-pie"></i> Rekapitulasi Akhir</h2>
+        <div class="summary-kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label"><i class="fas fa-shopping-bag"></i> Total Penjualan</div>
+            <div class="kpi-value" id="sumPenjualan">Rp0</div>
+          </div>
+          <div class="kpi-card green">
+            <div class="kpi-label"><i class="fas fa-arrow-down"></i> Pemasukan Lainnya</div>
+            <div class="kpi-value text-green" id="sumPemasukan">Rp0</div>
+          </div>
+          <div class="kpi-card red">
+            <div class="kpi-label"><i class="fas fa-arrow-up"></i> Total Pengeluaran</div>
+            <div class="kpi-value text-red" id="sumPengeluaran">Rp0</div>
+          </div>
+          <div class="kpi-card gold final">
+            <div class="kpi-label"><i class="fas fa-wallet"></i> Saldo Bersih Akhir</div>
+            <div class="kpi-value text-gold" id="saldoAkhir">Rp0</div>
+          </div>
+        </div>
+      </section>
+
+      <div class="action-buttons">
+        <button id="btnReset" type="button" class="btn btn-outline">
+          <i class="fas fa-undo"></i> Reset Form
+        </button>
+        <button id="btnBatalEdit" type="button" class="btn btn-danger hidden">
+          <i class="fas fa-times"></i> Batal Edit
+        </button>
+        <button id="btnPreview" type="button" class="btn btn-secondary">
+          <i class="fas fa-eye"></i> Preview WA
+        </button>
+        <button id="btnKirimWAEdit" type="button" class="btn btn-green hidden">
+          <i class="fab fa-whatsapp"></i> Kirim Pesan WA
+        </button>
+        <button
+          id="btnSimpanKirim"
+          type="button"
+          class="btn btn-primary btn-large"
+        >
+          <i class="fas fa-save"></i> Simpan dan Kirim WA
+        </button>
+      </div>
+    </main>
+
+    <main id="view-kasir-history" class="container view-section hidden">
+      <div class="top-action-bar">
+        <button
+          id="btnKembaliKasir"
+          type="button"
+          class="btn btn-secondary btn-small"
+        >
+          <i class="fas fa-arrow-left"></i> Kembali ke Form Input
+        </button>
+      </div>
+      <section class="card">
+        <div class="history-section-header">
+          <h2><i class="fas fa-database"></i> Riwayat Database Anda</h2>
+          <div class="history-filter-bar">
+            <div class="filter-controls-group">
+              <div class="filter-item">
+                <label for="kasirFilterRange">Periode:</label>
+                <select id="kasirFilterRange" class="filter-select">
+                  <option value="all">Semua Waktu</option>
+                  <option value="today">Hari Ini</option>
+                  <option value="7days">7 Hari Terakhir</option>
+                  <option value="thisMonth">Bulan Ini</option>
+                  <option value="custom">Rentang Tanggal (Kustom)...</option>
+                </select>
+              </div>
+              <div id="kasirCustomDateWrap" class="filter-custom-dates hidden">
+                <div class="filter-item">
+                  <label for="kasirDateStart">Dari:</label>
+                  <input type="date" id="kasirDateStart" class="filter-date-input" />
+                </div>
+                <div class="filter-item">
+                  <label for="kasirDateEnd">Sampai:</label>
+                  <input type="date" id="kasirDateEnd" class="filter-date-input" />
+                </div>
+                <button type="button" id="btnApplyKasirFilter" class="btn btn-small btn-orange">
+                  <i class="fa-solid fa-check"></i> Terapkan
+                </button>
+              </div>
+              <button type="button" id="btnResetKasirFilter" class="btn btn-small btn-secondary btn-reset-filter hidden" title="Reset Filter">
+                <i class="fa-solid fa-rotate-left"></i> Reset
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="historyContainer" class="history-container">
+          <p class="text-muted">Memuat data database...</p>
+        </div>
+      </section>
+    </main>
+
+    <main id="view-admin" class="container view-section hidden">
+      <div class="grid-3">
+        <div class="stat-card red">
+          <div class="stat-icon"><i class="fas fa-calendar-day"></i></div>
+          <div class="stat-details">
+            <span>Saldo Hari Ini</span>
+            <h3 id="statToday">Rp0</h3>
+          </div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-icon"><i class="fas fa-calendar-week"></i></div>
+          <div class="stat-details">
+            <span>Saldo Bulan Ini</span>
+            <h3 id="statMonth">Rp0</h3>
+          </div>
+        </div>
+        <div class="stat-card yellow">
+          <div class="stat-icon"><i class="fas fa-receipt"></i></div>
+          <div class="stat-details">
+            <span>Total Laporan</span>
+            <h3 id="statTotalDoc">0</h3>
+          </div>
+        </div>
+      </div>
+
+      <section class="card" style="margin-top: 20px">
+        <div class="header-between admin-wrap-header">
+          <h2><i class="fas fa-chart-line"></i> Grafik Pendapatan Bersih</h2>
+          <div class="admin-chart-dropdown">
+            <select id="chartFilterType" class="form-select">
+              <option value="7hari">7 Hari Terakhir</option>
+              <option value="mingguan">Per Minggu</option>
+              <option value="bulanan">Per Bulan</option>
+              <option value="tahun">Per Tahun</option>
+              <option value="custom">Custom Tanggal</option>
+            </select>
+          </div>
+        </div>
+        <div
+          id="chartFilterCustom"
+          class="grid-2 hidden"
+          style="
+            margin-bottom: 15px;
+            background: var(--bg-color);
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+          "
+        >
+          <div class="form-group">
+            <label>Dari Tanggal</label><input type="date" id="chartDateStart" />
+          </div>
+          <div class="form-group">
+            <label>Sampai Tanggal</label><input type="date" id="chartDateEnd" />
+          </div>
+          <button
+            id="btnApplyChartFilter"
+            class="btn btn-orange"
+            style="grid-column: 1 / -1"
+          >
+            Terapkan Filter Custom
+          </button>
+        </div>
+
+        <div class="chart-wrapper">
+          <canvas id="salesChart"></canvas>
+        </div>
+      </section>
+
+      <section
+        class="card"
+        style="margin-top: 20px; overflow: hidden; max-width: 100%"
+      >
+        <div class="history-section-header">
+          <h2><i class="fas fa-database"></i> Database Laporan Keseluruhan</h2>
+          <div class="history-filter-bar">
+            <div class="filter-controls-group">
+              <div class="filter-item">
+                <label for="adminFilterRange">Periode:</label>
+                <select id="adminFilterRange" class="filter-select">
+                  <option value="all">Semua Waktu</option>
+                  <option value="today">Hari Ini</option>
+                  <option value="7days">7 Hari Terakhir</option>
+                  <option value="thisMonth">Bulan Ini</option>
+                  <option value="custom">Rentang Tanggal (Kustom)...</option>
+                </select>
+              </div>
+              <div id="adminCustomDateWrap" class="filter-custom-dates hidden">
+                <div class="filter-item">
+                  <label for="adminDateStart">Dari:</label>
+                  <input type="date" id="adminDateStart" class="filter-date-input" />
+                </div>
+                <div class="filter-item">
+                  <label for="adminDateEnd">Sampai:</label>
+                  <input type="date" id="adminDateEnd" class="filter-date-input" />
+                </div>
+                <button type="button" id="btnApplyAdminFilter" class="btn btn-small btn-orange">
+                  <i class="fa-solid fa-check"></i> Terapkan
+                </button>
+              </div>
+              <button type="button" id="btnResetAdminFilter" class="btn btn-small btn-secondary btn-reset-filter hidden" title="Reset Filter">
+                <i class="fa-solid fa-rotate-left"></i> Reset
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="adminHistoryContainer" class="history-container"></div>
+      </section>
+
+      <section class="card pdf-export-card" style="margin-top: 20px">
+        <div class="pdf-section-header">
+          <div class="pdf-header-title-wrap">
+            <div class="pdf-icon-badge">
+              <i class="fa-solid fa-file-pdf"></i>
+            </div>
+            <div>
+              <h2>Unduh Rekapan Laporan PDF</h2>
+              <p class="section-desc">Pilih rentang periode data yang ingin diekspor ke dalam dokumen cetak PDF.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pdf-form-container">
+          <div class="grid-2 pdf-controls-grid">
+            <div class="form-group">
+              <label><i class="fa-regular fa-calendar"></i> Pilih Rentang Waktu</label>
+              <select id="pdfFilterType" class="form-select">
+                <option value="semua">Seluruh Data (Semua Waktu)</option>
+                <option value="harian">Harian (Satu Hari Tertentu)</option>
+                <option value="mingguan">Mingguan (7 Hari Terakhir)</option>
+                <option value="bulanan">Bulanan (Bulan Tertentu)</option>
+                <option value="custom">Kustom (Pilih Rentang Tanggal)</option>
+              </select>
+            </div>
+
+            <div class="form-group hidden" id="filterHarian">
+              <label><i class="fa-regular fa-calendar-check"></i> Pilih Tanggal</label>
+              <input type="date" id="dateHarian" class="calc-input filter-date-field" />
+            </div>
+            <div class="form-group hidden" id="filterBulanan">
+              <label><i class="fa-regular fa-calendar-days"></i> Pilih Bulan</label>
+              <input type="month" id="dateBulanan" class="calc-input filter-date-field" />
+            </div>
+          </div>
+
+          <div class="grid-2 hidden" id="filterCustom" style="margin-top: 14px">
+            <div class="form-group">
+              <label><i class="fa-regular fa-calendar-plus"></i> Dari Tanggal</label>
+              <input type="date" id="dateStart" class="calc-input filter-date-field" />
+            </div>
+            <div class="form-group">
+              <label><i class="fa-regular fa-calendar-minus"></i> Sampai Tanggal</label>
+              <input type="date" id="dateEnd" class="calc-input filter-date-field" />
+            </div>
+          </div>
+
+          <div id="pdfFilterHint" class="pdf-filter-hint">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Mencakup seluruh data transaksi &amp; rekapan yang tersimpan di sistem database.</span>
+          </div>
+
+          <div class="pdf-actions-bar">
+            <button
+              id="btnDownloadPdf"
+              class="btn btn-orange btn-large btn-pdf-export"
+            >
+              <i class="fa-solid fa-file-arrow-down"></i> Buat &amp; Unduh Laporan PDF
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div id="previewModal" class="modal hidden">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2><i class="fab fa-whatsapp text-green"></i> Preview Teks WhatsApp</h2>
+          <span class="close-modal" onclick="closeModal('previewModal')">&times;</span>
+        </div>
+        <div class="modal-body">
+          <pre
+            id="previewText"
+            style="
+              white-space: pre-wrap;
+              font-family: monospace;
+              word-break: break-word;
+              overflow-wrap: break-word;
+            "
+          ></pre>
+        </div>
+        <div class="modal-actions">
+          <button
+            id="btnKirimModal"
+            type="button"
+            class="btn btn-green btn-full"
+          >
+            <i class="fab fa-whatsapp"></i> Kirim Pesan WA
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom Dialog Modal (Replaces browser alert & confirm) -->
+    <div id="customDialogModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="custom-dialog-card">
+        <div class="dialog-icon-wrapper" id="dialogIconWrapper">
+          <i id="dialogIcon" class="fas fa-info-circle"></i>
+        </div>
+        <h3 id="dialogTitle" class="dialog-title">Informasi</h3>
+        <p id="dialogMessage" class="dialog-message">Pesan...</p>
+        <div class="dialog-actions" id="dialogActions">
+          <!-- Dynamic Action Buttons rendered via script.js -->
+        </div>
+      </div>
+    </div>
+
+    <footer>
+      <p>COPYRIGHT &copy; PM FRIED CHICKEN 2026 &bull; ALL RIGHTS RESERVED</p>
+    </footer>
+
+    <script src="firebase-config.js"></script>
+    <script src="script.js"></script>
+  </body>
+</html>

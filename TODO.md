@@ -1,0 +1,3 @@
+- [ ] Update Firebase Realtime Database rules agar global (tanpa auth) dan tidak bergantung sesi browser
+- [ ] Uji: buka aplikasi di 2 Chrome/profile berbeda → push laporan di salah satu harus muncul di yang lain tanpa refresh
+- [ ] Jika masih tidak tampil: cek error di DevTools Console/Network (Firebase permission denied / mismatch databaseURL)
