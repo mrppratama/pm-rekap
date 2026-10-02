@@ -1734,12 +1734,19 @@ _Laporan dibuat melalui Sistem Rekap Penjualan PM Fried Chicken Kendayakan_`;
 };
 
 // Tabel Detail Laporan Database
+window.hideDetailRow = (id, isAdmin = false) => {
+  const prefix = isAdmin ? "admin-detail-" : "kasir-detail-";
+  const row = document.getElementById(`${prefix}${id}`);
+  if (row) {
+    row.classList.add("hidden");
+  }
+};
+
 const generateDetailTableHTML = (item, isAdmin = false) => {
   const raw = item?.rawData;
   const money = (n) => `Rp${formatNumber(n || 0)}`;
-  const closeFunction = isAdmin
-    ? `toggleAdminDetail('${item?.id || item?.timestamp}')`
-    : `toggleDetailKasir('${item?.id || item?.timestamp}')`;
+  const itemId = item?.id || item?.timestamp?.toString() || "";
+  const closeFunction = `hideDetailRow('${itemId}', ${isAdmin ? "true" : "false"})`;
 
   if (!raw) {
     return `
@@ -1749,7 +1756,7 @@ const generateDetailTableHTML = (item, isAdmin = false) => {
           <h4><i class="fa-solid fa-file-invoice text-red"></i> Rincian Laporan: <strong>${item?.kasir || "-"}</strong></h4>
           <span class="badge-meta"><i class="fa-regular fa-calendar-days"></i> ${item?.hari || "-"}, ${item?.tanggal || "-"} &bull; <i class="fa-regular fa-clock"></i> ${item?.jam || "-"}</span>
         </div>
-        <button class="btn btn-small btn-secondary" onclick="${closeFunction}">
+        <button type="button" class="btn btn-small btn-secondary" onclick="${closeFunction}">
           <i class="fa-solid fa-xmark"></i> Tutup
         </button>
       </div>
@@ -1851,7 +1858,7 @@ const generateDetailTableHTML = (item, isAdmin = false) => {
           <h4><i class="fa-solid fa-file-invoice text-red"></i> Rincian Laporan: <strong>${item?.kasir || "-"}</strong></h4>
           <span class="badge-meta"><i class="fa-regular fa-calendar-check"></i> ${item?.hari || "-"}, ${item?.tanggal || "-"} &bull; <i class="fa-regular fa-clock"></i> ${item?.jam || "-"}</span>
         </div>
-        <button class="btn btn-small btn-secondary" onclick="${closeFunction}">
+        <button type="button" class="btn btn-small btn-secondary" onclick="${closeFunction}">
           <i class="fa-solid fa-xmark"></i> Tutup Rincian
         </button>
       </div>
