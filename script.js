@@ -2842,7 +2842,14 @@ if (pdfFilterTypeEl) {
     if (filterBulanan) filterBulanan.classList.add("hidden");
     if (filterCustom) filterCustom.classList.add("hidden");
 
-    if (val === "harian") {
+    if (val === "active_filter") {
+      if (hintEl) {
+        hintEl.innerHTML = `
+          <i class="fa-solid fa-circle-info"></i>
+          <span>Dokumen PDF akan otomatis disaring sesuai filter periode yang sedang aktif di dashboard utama.</span>
+        `;
+      }
+    } else if (val === "harian") {
       if (filterHarian) filterHarian.classList.remove("hidden");
       if (hintEl) {
         hintEl.innerHTML = `
@@ -2902,7 +2909,14 @@ document.getElementById("btnDownloadPdf").addEventListener("click", async () => 
 
   let dataToPrint = [...allReportsGlobal];
 
-  if (filterType === "harian") {
+  if (filterType === "active_filter") {
+    dataToPrint = filterReportsByDate(
+      allReportsGlobal,
+      adminFilterState.type,
+      adminFilterState.startDate,
+      adminFilterState.endDate,
+    );
+  } else if (filterType === "harian") {
     if (!paramHarian) {
       await customAlert(
         "Mohon pilih tanggal laporan yang ingin dicetak.",

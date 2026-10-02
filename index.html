@@ -512,15 +512,6 @@
             <button
               type="button"
               class="filter-pill"
-              data-filter="today"
-              onclick="setAdminPillFilter('today')"
-            >
-              <i class="fa-regular fa-calendar-day"></i>
-              <span>Hari Ini</span>
-            </button>
-            <button
-              type="button"
-              class="filter-pill"
               data-filter="thisMonth"
               onclick="setAdminPillFilter('thisMonth')"
             >
@@ -645,6 +636,7 @@
             <div class="form-group">
               <label><i class="fa-regular fa-calendar"></i> Pilih Rentang Waktu</label>
               <select id="pdfFilterType" class="form-select">
+                <option value="active_filter" selected>Sesuai Filter Dashboard Aktif</option>
                 <option value="semua">Seluruh Data (Semua Waktu)</option>
                 <option value="harian">Harian (Satu Hari Tertentu)</option>
                 <option value="mingguan">Mingguan (7 Hari Terakhir)</option>

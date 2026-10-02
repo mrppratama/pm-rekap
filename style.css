@@ -3947,28 +3947,28 @@ body.dark-mode .segmented-filter-group {
   color: var(--primary);
 }
 
-/* Active Segmented Pill - High Contrast Clean Capsule */
+/* Active Segmented Pill - Brand Red/Orange System Theme */
 .filter-pill.active {
-  background: #1e293b;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
   color: #ffffff;
   font-weight: 700;
-  box-shadow: 0 3px 10px rgba(15, 23, 42, 0.22);
+  box-shadow: 0 4px 12px rgba(214, 40, 40, 0.35);
 }
 
 .filter-pill.active i {
-  color: #2dd4bf; /* Sleek vibrant cyan-teal glow like image 2 */
+  color: #F7B801; /* Vibrant gold yellow icon */
   opacity: 1;
-  transform: scale(1.1);
+  transform: scale(1.12);
 }
 
 body.dark-mode .filter-pill.active {
-  background: #334155;
-  color: #f8fafc;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(135deg, var(--primary) 0%, #c94400 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.45);
 }
 
 body.dark-mode .filter-pill.active i {
-  color: #38bdf8;
+  color: #fbbf24;
 }
 
 /* Admin Custom Date Range Collapsible Panel */
