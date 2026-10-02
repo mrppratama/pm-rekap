@@ -278,7 +278,7 @@ const saveNotificationHistory = (list) => {
   } catch (_) {}
 };
 
-function addNotificationHistory(title, message, type = "system") {
+function addNotificationHistory(title, message, type = "system", reportId = null) {
   const list = getNotificationHistory();
   const now = new Date();
   const timeStr =
@@ -287,12 +287,13 @@ function addNotificationHistory(title, message, type = "system") {
     now.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
 
   const newItem = {
-    id: Date.now().toString(),
+    id: "notif_" + Date.now().toString() + "_" + Math.floor(Math.random() * 1000),
     title,
     message,
     type, // 'report-in', 'report-out', 'system'
     time: timeStr,
     unread: true,
+    reportId: reportId ? String(reportId) : null,
   };
 
   list.unshift(newItem);
@@ -351,18 +352,30 @@ function renderNotificationList() {
             : "fa-solid fa-bell";
 
       const iconType = item.type || "system";
+      const hasReport = item.type === "report-in" || item.type === "report-out" || item.reportId;
+      const safeReportId = item.reportId || "";
+
+      const actionBtn = hasReport
+        ? `<button type="button" class="btn-notif-detail" onclick="openNotificationDetail('${item.id}', '${safeReportId}', event)">
+             <i class="fa-solid fa-file-lines"></i> Lihat Rincian Laporan
+           </button>`
+        : "";
 
       return `
-        <div class="notif-item ${item.unread ? "unread" : ""}">
+        <div class="notif-item ${item.unread ? "unread" : ""}" onclick="openNotificationDetail('${item.id}', '${safeReportId}', event)">
           <div class="notif-item-icon ${iconType}">
             <i class="${iconClass}"></i>
           </div>
           <div class="notif-item-content">
             <div class="notif-item-title">
               <span>${item.title}</span>
+              ${item.unread ? '<span class="notif-unread-dot" title="Belum dibaca"></span>' : ""}
             </div>
             <p class="notif-item-desc">${item.message}</p>
-            <span class="notif-item-time">${item.time}</span>
+            <div class="notif-item-footer">
+              <span class="notif-item-time"><i class="fa-regular fa-clock"></i> ${item.time}</span>
+              ${actionBtn}
+            </div>
           </div>
         </div>
       `;
@@ -378,17 +391,97 @@ window.showNotificationCenterModal = (e) => {
   const wrapper = document.getElementById("userAccountWrapper");
   if (wrapper) wrapper.classList.remove("open");
 
-  // Mark all notifications as read and render list
-  const list = getNotificationHistory();
-  list.forEach((n) => (n.unread = false));
-  saveNotificationHistory(list);
-  updateNotificationBadges();
   renderNotificationList();
 
   const modal = document.getElementById("notifCenterModal");
   if (modal) {
     modal.classList.remove("hidden");
     modal.style.display = "flex";
+  }
+};
+
+window.markAllNotificationsAsRead = () => {
+  const list = getNotificationHistory();
+  list.forEach((n) => (n.unread = false));
+  saveNotificationHistory(list);
+  updateNotificationBadges();
+  renderNotificationList();
+  showToast("Semua notifikasi ditandai dibaca");
+};
+
+window.openNotificationDetail = (notifId, reportId, e) => {
+  if (e) {
+    if (typeof e.stopPropagation === "function") e.stopPropagation();
+    if (typeof e.preventDefault === "function") e.preventDefault();
+  }
+
+  // Hapus/tandai dibaca notifikasi ini agar langsung hilang dari daftar unread
+  let list = getNotificationHistory();
+  list = list.filter((n) => n.id !== notifId);
+  saveNotificationHistory(list);
+  updateNotificationBadges();
+  renderNotificationList();
+
+  // Tutup modal notifikasi
+  closeModal("notifCenterModal");
+
+  const currentRole = currentAppRole || localStorage.getItem("pm_logged_role") || "kasir";
+
+  if (currentRole === "admin") {
+    document.getElementById("view-login")?.classList.add("hidden");
+    document.getElementById("view-kasir")?.classList.add("hidden");
+    document.getElementById("view-kasir-history")?.classList.add("hidden");
+    document.getElementById("view-admin")?.classList.remove("hidden");
+    renderAdminDashboard();
+
+    if (reportId) {
+      setTimeout(() => {
+        const filtered = filterReportsByDate(
+          allReportsGlobal,
+          adminFilterState.type,
+          adminFilterState.startDate,
+          adminFilterState.endDate,
+        );
+        const idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+        if (idx !== -1) {
+          adminCurrentPage = Math.floor(idx / ITEMS_PER_PAGE) + 1;
+          renderAdminDashboard();
+        }
+        setTimeout(() => {
+          toggleAdminDetail(reportId);
+          const el = document.getElementById(`admin-row-${reportId}`) || document.getElementById(`admin-detail-${reportId}`);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 120);
+      }, 80);
+    }
+  } else {
+    // Role kasir
+    document.getElementById("view-login")?.classList.add("hidden");
+    document.getElementById("view-kasir")?.classList.add("hidden");
+    document.getElementById("view-admin")?.classList.add("hidden");
+    document.getElementById("view-kasir-history")?.classList.remove("hidden");
+    loadKasirHistory();
+
+    if (reportId) {
+      setTimeout(() => {
+        const filtered = filterReportsByDate(
+          allReportsGlobal,
+          kasirFilterState.type,
+          kasirFilterState.startDate,
+          kasirFilterState.endDate,
+        );
+        const idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+        if (idx !== -1) {
+          kasirCurrentPage = Math.floor(idx / ITEMS_PER_PAGE) + 1;
+          loadKasirHistory();
+        }
+        setTimeout(() => {
+          toggleDetailKasir(reportId);
+          const el = document.getElementById(`kasir-row-${reportId}`) || document.getElementById(`kasir-detail-${reportId}`);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 120);
+      }, 80);
+    }
   }
 };
 
@@ -399,9 +492,9 @@ window.clearAllNotifications = () => {
   showToast("Notifikasi telah dibersihkan");
 };
 
-async function sendNativeNotification(title, body, tag = "pm-rekap", type = "system") {
+async function sendNativeNotification(title, body, tag = "pm-rekap", type = "system", reportId = null) {
   playNotificationSound();
-  addNotificationHistory(title, body, type);
+  addNotificationHistory(title, body, type, reportId);
 
   if (!("Notification" in window)) return;
 
@@ -421,7 +514,7 @@ async function sendNativeNotification(title, body, tag = "pm-rekap", type = "sys
           badge: "/favicon-32.png",
           tag: tag,
           vibrate: [200, 100, 200],
-          data: { url: "/" },
+          data: { url: "/", reportId: reportId },
         });
       } else {
         const n = new Notification(title, {
@@ -432,6 +525,9 @@ async function sendNativeNotification(title, body, tag = "pm-rekap", type = "sys
         n.onclick = function () {
           window.focus();
           this.close();
+          if (reportId) {
+            openNotificationDetail(null, reportId);
+          }
         };
       }
     } catch (err) {
@@ -467,6 +563,7 @@ const setupRealtimeListener = () => {
                 `Kasir ${report.kasir || "Shift"} mengirim laporan baru (${report.tanggal || "Hari ini"}) • Saldo Bersih: Rp ${formatNumber(report.saldoAkhir || 0)}`,
                 "admin-report-received",
                 "report-in",
+                key,
               );
               showToast(`🍗 Laporan baru masuk dari ${report.kasir || "Kasir"}!`);
             }
@@ -1761,12 +1858,13 @@ document.getElementById("btnSimpanKirim").addEventListener("click", async () => 
         .set(dataToSave)
         .then(() => {
           document.getElementById("loading").classList.add("hidden");
-          showToast("✅ Laporan Berhasil Dikirim!");
+          showToast("Laporan Berhasil Dikirim!");
           sendNativeNotification(
             "Laporan Berhasil Terkirim! ✅",
             `Laporan Kasir ${dataToSave.kasir || ""} tanggal ${dataToSave.tanggal} (Total: Rp ${formatNumber(dataToSave.penjualan)}) berhasil tersimpan ke sistem.`,
             "kasir-sent",
             "report-out",
+            newKey,
           );
           resetForm();
           window.open(
@@ -1786,29 +1884,30 @@ document.getElementById("btnSimpanKirim").addEventListener("click", async () => 
   } else {
     // Fallback ke localStorage
     const records = JSON.parse(localStorage.getItem("pmReports") || "[]");
+    const safeLocalId = editingId !== null ? editingId : Date.now().toString();
     if (editingId !== null) {
       const idx = records.findIndex((r) => r.id === editingId);
       if (idx !== -1) records[idx] = { id: editingId, ...dataToSave };
     } else {
-      const newId = Date.now().toString();
-      records.push({ id: newId, ...dataToSave });
+      records.push({ id: safeLocalId, ...dataToSave });
     }
     localStorage.setItem("pmReports", JSON.stringify(records));
 
     document.getElementById("loading").classList.add("hidden");
     if (editingId !== null) {
-      showToast("✅ Perubahan Berhasil Disimpan (Local)!");
+      showToast("Perubahan Berhasil Disimpan!");
       exitEditMode();
       document.getElementById("view-kasir").classList.add("hidden");
       document.getElementById("view-kasir-history").classList.remove("hidden");
       loadKasirHistory();
     } else {
-      showToast("✅ Laporan Berhasil Dikirim!");
+      showToast("Laporan Berhasil Dikirim!");
       sendNativeNotification(
         "Laporan Berhasil Terkirim! ✅",
         `Laporan Kasir ${dataToSave.kasir || ""} tanggal ${dataToSave.tanggal} berhasil tersimpan ke sistem lokal.`,
         "kasir-sent",
         "report-out",
+        safeLocalId,
       );
       resetForm();
       window.open(
@@ -1970,7 +2069,7 @@ const loadKasirHistory = () => {
 
   paginatedReports.forEach((item) => {
     html += `
-      <tr>
+      <tr id="kasir-row-${item.id}">
         <td data-label="Waktu">
           <div class="cell-time">
             <i class="fa-regular fa-calendar-days text-muted"></i>
@@ -2324,7 +2423,7 @@ const renderAdminDashboard = () => {
   paginatedReports.forEach((item) => {
     const itemId = item.id || item.timestamp?.toString() || "";
     html += `
-      <tr>
+      <tr id="admin-row-${itemId}">
         <td data-label="Waktu">
           <div class="cell-time">
             <i class="fa-regular fa-calendar-days text-muted"></i>
