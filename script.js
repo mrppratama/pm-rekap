@@ -427,62 +427,112 @@ window.openNotificationDetail = (notifId, reportId, e) => {
 
   const currentRole = currentAppRole || localStorage.getItem("pm_logged_role") || "kasir";
 
-  if (currentRole === "admin") {
-    document.getElementById("view-login")?.classList.add("hidden");
-    document.getElementById("view-kasir")?.classList.add("hidden");
-    document.getElementById("view-kasir-history")?.classList.add("hidden");
-    document.getElementById("view-admin-products")?.classList.add("hidden");
-    document.getElementById("view-admin")?.classList.remove("hidden");
+  if (currentRole === "admin" || currentRole === "admin-products") {
+    switchView("admin");
     renderAdminDashboard();
 
     if (reportId) {
       setTimeout(() => {
-        const filtered = filterReportsByDate(
+        // Cek apakah data ada di filter saat ini
+        let filtered = filterReportsByDate(
           allReportsGlobal,
           adminFilterState.type,
           adminFilterState.startDate,
           adminFilterState.endDate,
         );
-        const idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+        let idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+        
+        // Jika tidak ditemukan karena filter waktu, reset filter ke 'all'
+        if (idx === -1) {
+          adminFilterState.type = "all";
+          adminFilterState.startDate = "";
+          adminFilterState.endDate = "";
+          const adminFilterRange = document.getElementById("adminFilterRange");
+          if (adminFilterRange) adminFilterRange.value = "all";
+          document.getElementById("adminCustomDateWrap")?.classList.add("hidden");
+          renderAdminDashboard();
+          filtered = filterReportsByDate(allReportsGlobal, "all", "", "");
+          idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+        }
+
         if (idx !== -1) {
           adminCurrentPage = Math.floor(idx / ITEMS_PER_PAGE) + 1;
           renderAdminDashboard();
         }
+
         setTimeout(() => {
-          toggleAdminDetail(reportId);
-          const el = document.getElementById(`admin-row-${reportId}`) || document.getElementById(`admin-detail-${reportId}`);
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 120);
-      }, 80);
+          // Buka rincian detail secara eksplisit
+          const row = document.getElementById(`admin-detail-${reportId}`);
+          const content = document.getElementById(`admin-content-${reportId}`);
+          if (row && content) {
+            const item = allReportsGlobal.find((r) => (r.id || r.timestamp?.toString()) === reportId);
+            if (item) {
+              content.innerHTML = generateDetailTableHTML(item, true);
+              row.classList.remove("hidden");
+            }
+          }
+          const rowEl = document.getElementById(`admin-row-${reportId}`);
+          if (rowEl) {
+            rowEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            rowEl.classList.add("highlight-row");
+            setTimeout(() => rowEl.classList.remove("highlight-row"), 2500);
+          }
+        }, 150);
+      }, 100);
     }
   } else {
     // Role kasir
-    document.getElementById("view-login")?.classList.add("hidden");
+    switchView("kasir");
     document.getElementById("view-kasir")?.classList.add("hidden");
-    document.getElementById("view-admin")?.classList.add("hidden");
-    document.getElementById("view-admin-products")?.classList.add("hidden");
     document.getElementById("view-kasir-history")?.classList.remove("hidden");
     loadKasirHistory();
 
     if (reportId) {
       setTimeout(() => {
-        const filtered = filterReportsByDate(
+        let filtered = filterReportsByDate(
           allReportsGlobal,
           kasirFilterState.type,
           kasirFilterState.startDate,
           kasirFilterState.endDate,
         );
-        const idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+        let idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+
+        if (idx === -1) {
+          kasirFilterState.type = "all";
+          kasirFilterState.startDate = "";
+          kasirFilterState.endDate = "";
+          const kasirFilterRange = document.getElementById("kasirFilterRange");
+          if (kasirFilterRange) kasirFilterRange.value = "all";
+          document.getElementById("kasirCustomDateWrap")?.classList.add("hidden");
+          loadKasirHistory();
+          filtered = filterReportsByDate(allReportsGlobal, "all", "", "");
+          idx = filtered.findIndex((r) => (r.id || r.timestamp?.toString()) === reportId);
+        }
+
         if (idx !== -1) {
           kasirCurrentPage = Math.floor(idx / ITEMS_PER_PAGE) + 1;
           loadKasirHistory();
         }
+
         setTimeout(() => {
-          toggleDetailKasir(reportId);
-          const el = document.getElementById(`kasir-row-${reportId}`) || document.getElementById(`kasir-detail-${reportId}`);
-          if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 120);
-      }, 80);
+          // Buka rincian detail secara eksplisit
+          const row = document.getElementById(`kasir-detail-${reportId}`);
+          const content = document.getElementById(`content-detail-${reportId}`);
+          if (row && content) {
+            const item = allReportsGlobal.find((r) => (r.id || r.timestamp?.toString()) === reportId);
+            if (item) {
+              content.innerHTML = generateDetailTableHTML(item, false);
+              row.classList.remove("hidden");
+            }
+          }
+          const rowEl = document.getElementById(`kasir-row-${reportId}`);
+          if (rowEl) {
+            rowEl.scrollIntoView({ behavior: "smooth", block: "center" });
+            rowEl.classList.add("highlight-row");
+            setTimeout(() => rowEl.classList.remove("highlight-row"), 2500);
+          }
+        }, 150);
+      }, 100);
     }
   }
 };

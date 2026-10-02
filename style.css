@@ -2770,6 +2770,20 @@ footer {
 .text-center { text-align: center !important; }
 .text-right { text-align: right !important; }
 
+.detail-row.hidden {
+  display: none !important;
+}
+
+@keyframes rowHighlightPulse {
+  0% { background-color: rgba(247, 184, 1, 0.45); }
+  50% { background-color: rgba(247, 184, 1, 0.2); }
+  100% { background-color: transparent; }
+}
+
+.highlight-row {
+  animation: rowHighlightPulse 2.5s ease-out;
+}
+
 /* ==========================================
    Pagination Component
    ========================================== */
@@ -2989,6 +3003,15 @@ footer {
   }
 
   .history-table tr.detail-row {
+    display: table-row;
+  }
+
+  .history-table tr.detail-row.hidden,
+  .history-table tr.hidden {
+    display: none !important;
+  }
+
+  .history-table tr.detail-row:not(.hidden) {
     display: table-row !important;
   }
 
