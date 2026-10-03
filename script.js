@@ -343,6 +343,23 @@ const saveNotificationHistory = (list) => {
   } catch (_) {}
 };
 
+const getReadReportIds = () => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem("pm_read_report_ids") || "[]"));
+  } catch (_) {
+    return new Set();
+  }
+};
+
+const markReportAsReadLocal = (reportId) => {
+  if (!reportId) return;
+  try {
+    const ids = getReadReportIds();
+    ids.add(String(reportId));
+    localStorage.setItem("pm_read_report_ids", JSON.stringify(Array.from(ids).slice(-250)));
+  } catch (_) {}
+};
+
 function addNotificationHistory(title, message, type = "system", reportId = null) {
   const list = getNotificationHistory();
   const now = new Date();
@@ -497,6 +514,10 @@ window.markSingleNotificationAsRead = (notifId, e) => {
     if (typeof e.preventDefault === "function") e.preventDefault();
   }
   let list = getNotificationHistory();
+  const targetItem = list.find((n) => n.id === notifId);
+  if (targetItem && targetItem.reportId) {
+    markReportAsReadLocal(targetItem.reportId);
+  }
   list = list.filter((n) => n.id !== notifId);
   saveNotificationHistory(list);
   updateNotificationBadges();
@@ -505,6 +526,15 @@ window.markSingleNotificationAsRead = (notifId, e) => {
 };
 
 window.markAllNotificationsAsRead = () => {
+  const list = getNotificationHistory();
+  list.forEach((item) => {
+    if (item.reportId) markReportAsReadLocal(item.reportId);
+  });
+  if (Array.isArray(allReportsGlobal)) {
+    allReportsGlobal.forEach((r) => {
+      if (r.id) markReportAsReadLocal(r.id);
+    });
+  }
   saveNotificationHistory([]);
   updateNotificationBadges();
   renderNotificationList();
@@ -520,9 +550,14 @@ window.openNotificationDetail = (notifId, reportId, e) => {
   }
 
   // Tandai dibaca & hapus dari list unread
-  if (notifId) {
+  if (notifId || reportId) {
+    if (reportId) markReportAsReadLocal(reportId);
     let list = getNotificationHistory();
-    list = list.filter((n) => n.id !== notifId);
+    const targetItem = list.find((n) => n.id === notifId || (reportId && n.reportId === String(reportId)));
+    if (targetItem && targetItem.reportId) {
+      markReportAsReadLocal(targetItem.reportId);
+    }
+    list = list.filter((n) => n.id !== notifId && (!reportId || n.reportId !== String(reportId)));
     saveNotificationHistory(list);
     updateNotificationBadges();
     renderNotificationList();
@@ -736,6 +771,7 @@ function syncMissingReportNotifications() {
   const isOwner = activeRole.startsWith("admin");
   const notifHistory = getNotificationHistory();
   const existingNotifReportIds = new Set(notifHistory.map((n) => n.reportId).filter(Boolean));
+  const readReportIds = getReadReportIds();
 
   if (!allReportsGlobal || allReportsGlobal.length === 0) return;
 
@@ -744,33 +780,35 @@ function syncMissingReportNotifications() {
     const key = report.id;
     if (!key) return;
 
-    if (!existingNotifReportIds.has(String(key))) {
-      const title = isOwner ? "🍗 Laporan Kasir Masuk" : "🍗 Laporan Penjualan Masuk";
-      const message = `Kasir ${report.kasir || "Shift"} mengirim laporan (${report.tanggal || "Hari ini"}) • Total: Rp ${formatNumber(report.penjualan || report.saldoAkhir || 0)}`;
-      const type = "report-in";
+    const strKey = String(key);
+    // Skip if already in active notifications OR if user marked it read!
+    if (existingNotifReportIds.has(strKey) || readReportIds.has(strKey)) return;
 
-      const list = getNotificationHistory();
-      const now = new Date();
-      const timeStr =
-        now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) +
-        " • " +
-        now.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+    const title = isOwner ? "🍗 Laporan Kasir Masuk" : "🍗 Laporan Penjualan Masuk";
+    const message = `Kasir ${report.kasir || "Shift"} mengirim laporan (${report.tanggal || "Hari ini"}) • Total: Rp ${formatNumber(report.penjualan || report.saldoAkhir || 0)}`;
+    const type = "report-in";
 
-      const newItem = {
-        id: "notif_" + Date.now().toString() + "_" + Math.floor(Math.random() * 1000),
-        title,
-        message,
-        type,
-        time: timeStr,
-        unread: true,
-        reportId: String(key),
-      };
+    const list = getNotificationHistory();
+    const now = new Date();
+    const timeStr =
+      now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) +
+      " • " +
+      now.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
 
-      list.unshift(newItem);
-      saveNotificationHistory(list);
-      existingNotifReportIds.add(String(key));
-      addedCount++;
-    }
+    const newItem = {
+      id: "notif_" + Date.now().toString() + "_" + Math.floor(Math.random() * 1000),
+      title,
+      message,
+      type,
+      time: timeStr,
+      unread: true,
+      reportId: strKey,
+    };
+
+    list.unshift(newItem);
+    saveNotificationHistory(list);
+    existingNotifReportIds.add(strKey);
+    addedCount++;
   });
 
   if (addedCount > 0) {
