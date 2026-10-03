@@ -2373,6 +2373,58 @@ select.custom-select-native,
   gap: 8px;
 }
 
+.notif-perm-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: rgba(255, 183, 3, 0.12);
+  border: 1px solid rgba(255, 183, 3, 0.4);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.notif-perm-banner:hover {
+  background: rgba(255, 183, 3, 0.2);
+}
+
+.perm-banner-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-main);
+  font-size: 0.82rem;
+  font-weight: 500;
+}
+
+.perm-banner-info i {
+  color: var(--gold);
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.btn-perm-grant {
+  background: var(--gold);
+  color: #1a1a1a;
+  border: none;
+  border-radius: var(--radius-xs);
+  padding: 6px 12px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.btn-perm-grant:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
 .notif-item {
   display: flex;
   align-items: flex-start;

@@ -280,13 +280,53 @@ function playSynthFallbackChime() {
   } catch (_) {}
 }
 
-async function requestNotificationPermission() {
-  if ("Notification" in window && Notification.permission === "default") {
+async function requestNotificationPermission(isUserInitiated = false) {
+  if (!("Notification" in window)) {
+    if (isUserInitiated) {
+      customAlert("Browser ini belum mendukung fitur Web Notification.", "Tidak Didukung", "info");
+    }
+    return;
+  }
+
+  if (Notification.permission === "default") {
     try {
-      await Notification.requestPermission();
+      const perm = await Notification.requestPermission();
+      if (perm === "granted") {
+        showToast("🔔 Notifikasi browser berhasil diaktifkan!");
+        renderNotificationList();
+      } else if (isUserInitiated) {
+        customAlert("Izin notifikasi ditolak/dibatalkan. Banner pop-up browser tidak akan muncul saat aplikasi di latar belakang.", "Izin Ditolak", "warning");
+      }
     } catch (_) {}
+  } else if (Notification.permission === "granted") {
+    if (isUserInitiated) {
+      showToast("🔔 Notifikasi browser sudah aktif!");
+    }
+  } else if (Notification.permission === "denied" && isUserInitiated) {
+    customAlert("Izin notifikasi diblokir di pengaturan browser/perangkat Anda. Mohon izinkan notifikasi pada Pengaturan Situs di browser.", "Notifikasi Diblokir", "warning");
   }
 }
+
+// Unlock audio context on user interaction for mobile browsers (iOS / Android autoplay policy)
+function unlockAudioContext() {
+  try {
+    if (!notifAudioInstance) {
+      notifAudioInstance = new Audio("kaching-sound-fix.mp3");
+    }
+    notifAudioInstance.volume = 0.01;
+    const p = notifAudioInstance.play();
+    if (p !== undefined) {
+      p.then(() => {
+        notifAudioInstance.pause();
+        notifAudioInstance.volume = 1.0;
+      }).catch(() => {});
+    }
+  } catch (_) {}
+  window.removeEventListener("touchstart", unlockAudioContext);
+  window.removeEventListener("click", unlockAudioContext);
+}
+window.addEventListener("touchstart", unlockAudioContext, { once: true });
+window.addEventListener("click", unlockAudioContext, { once: true });
 
 // --- NOTIFICATION CENTER SYSTEM ---
 const getNotificationHistory = () => {
@@ -359,8 +399,23 @@ function renderNotificationList() {
   // WA behavior: Read / Marked-as-read items are cleared from active unread list
   const list = rawList.filter((n) => n.unread !== false);
 
+  let permBanner = "";
+  if ("Notification" in window && Notification.permission === "default") {
+    permBanner = `
+      <div class="notif-perm-banner" onclick="requestNotificationPermission(true)">
+        <div class="perm-banner-info">
+          <i class="fa-solid fa-bell-concierge"></i>
+          <span>Aktifkan izin notifikasi browser untuk menerima pop-up instan</span>
+        </div>
+        <button type="button" class="btn-perm-grant">Aktifkan</button>
+      </div>
+    `;
+  }
+
   if (!list || list.length === 0) {
-    container.innerHTML = `
+    container.innerHTML =
+      permBanner +
+      `
       <div class="notif-empty-state">
         <i class="fa-regular fa-bell-slash"></i>
         <p>Belum ada notifikasi baru</p>
@@ -369,52 +424,54 @@ function renderNotificationList() {
     return;
   }
 
-  container.innerHTML = list
-    .map((item) => {
-      const iconClass =
-        item.type === "report-in"
-          ? "fa-solid fa-file-invoice-dollar"
-          : item.type === "report-out"
-            ? "fa-solid fa-paper-plane"
-            : "fa-solid fa-bell";
+  container.innerHTML =
+    permBanner +
+    list
+      .map((item) => {
+        const iconClass =
+          item.type === "report-in"
+            ? "fa-solid fa-file-invoice-dollar"
+            : item.type === "report-out"
+              ? "fa-solid fa-paper-plane"
+              : "fa-solid fa-bell";
 
-      const iconType = item.type || "system";
-      const hasReport = item.type === "report-in" || item.type === "report-out" || item.reportId;
-      const safeReportId = item.reportId || "";
+        const iconType = item.type || "system";
+        const hasReport = item.type === "report-in" || item.type === "report-out" || item.reportId;
+        const safeReportId = item.reportId || "";
 
-      const actionBtn = hasReport
-        ? `<button type="button" class="btn-notif-detail" onclick="openNotificationDetail('${item.id}', '${safeReportId}', event)">
-             <i class="fa-solid fa-file-lines"></i> Rincian
-           </button>`
-        : "";
+        const actionBtn = hasReport
+          ? `<button type="button" class="btn-notif-detail" onclick="openNotificationDetail('${item.id}', '${safeReportId}', event)">
+               <i class="fa-solid fa-file-lines"></i> Rincian
+             </button>`
+          : "";
 
-      const markReadBtn = `<button type="button" class="btn-notif-read" onclick="markSingleNotificationAsRead('${item.id}', event)" title="Tandai Dibaca">
-             <i class="fa-solid fa-check"></i> Tandai Dibaca
-           </button>`;
+        const markReadBtn = `<button type="button" class="btn-notif-read" onclick="markSingleNotificationAsRead('${item.id}', event)" title="Tandai Dibaca">
+               <i class="fa-solid fa-check"></i> Tandai Dibaca
+             </button>`;
 
-      return `
-        <div class="notif-item unread" onclick="openNotificationDetail('${item.id}', '${safeReportId}', event)">
-          <div class="notif-item-icon ${iconType}">
-            <i class="${iconClass}"></i>
-          </div>
-          <div class="notif-item-content">
-            <div class="notif-item-title">
-              <span>${item.title}</span>
-              <span class="notif-unread-dot" title="Belum dibaca"></span>
+        return `
+          <div class="notif-item unread" onclick="openNotificationDetail('${item.id}', '${safeReportId}', event)">
+            <div class="notif-item-icon ${iconType}">
+              <i class="${iconClass}"></i>
             </div>
-            <p class="notif-item-desc">${item.message}</p>
-            <div class="notif-item-footer">
-              <span class="notif-item-time"><i class="fa-regular fa-clock"></i> ${item.time}</span>
-              <div class="notif-item-actions">
-                ${markReadBtn}
-                ${actionBtn}
+            <div class="notif-item-content">
+              <div class="notif-item-title">
+                <span>${item.title}</span>
+                <span class="notif-unread-dot" title="Belum dibaca"></span>
+              </div>
+              <p class="notif-item-desc">${item.message}</p>
+              <div class="notif-item-footer">
+                <span class="notif-item-time"><i class="fa-regular fa-clock"></i> ${item.time}</span>
+                <div class="notif-item-actions">
+                  ${markReadBtn}
+                  ${actionBtn}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      `;
-    })
-    .join("");
+        `;
+      })
+      .join("");
 }
 
 window.showNotificationCenterModal = (e) => {
@@ -672,6 +729,55 @@ if ("serviceWorker" in navigator) {
   });
 }
 
+function syncMissingReportNotifications() {
+  const activeRole = currentAppRole || localStorage.getItem("pm_logged_role") || "";
+  if (!activeRole || activeRole === "guest") return;
+
+  const isOwner = activeRole.startsWith("admin");
+  const notifHistory = getNotificationHistory();
+  const existingNotifReportIds = new Set(notifHistory.map((n) => n.reportId).filter(Boolean));
+
+  if (!allReportsGlobal || allReportsGlobal.length === 0) return;
+
+  let addedCount = 0;
+  allReportsGlobal.forEach((report) => {
+    const key = report.id;
+    if (!key) return;
+
+    if (!existingNotifReportIds.has(String(key))) {
+      const title = isOwner ? "🍗 Laporan Kasir Masuk" : "🍗 Laporan Penjualan Masuk";
+      const message = `Kasir ${report.kasir || "Shift"} mengirim laporan (${report.tanggal || "Hari ini"}) • Total: Rp ${formatNumber(report.penjualan || report.saldoAkhir || 0)}`;
+      const type = "report-in";
+
+      const list = getNotificationHistory();
+      const now = new Date();
+      const timeStr =
+        now.toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" }) +
+        " • " +
+        now.toLocaleDateString("id-ID", { day: "2-digit", month: "short" });
+
+      const newItem = {
+        id: "notif_" + Date.now().toString() + "_" + Math.floor(Math.random() * 1000),
+        title,
+        message,
+        type,
+        time: timeStr,
+        unread: true,
+        reportId: String(key),
+      };
+
+      list.unshift(newItem);
+      saveNotificationHistory(list);
+      existingNotifReportIds.add(String(key));
+      addedCount++;
+    }
+  });
+
+  if (addedCount > 0) {
+    updateNotificationBadges();
+  }
+}
+
 let knownReportTimestamps = new Map();
 let isInitialRealtimeLoad = true;
 
@@ -689,39 +795,47 @@ const setupRealtimeListener = () => {
         Object.keys(data).forEach((key) => {
           const report = { id: key, ...data[key] };
           currentList.push(report);
-
-          // Trigger notification for Owner when a new report arrives or an existing report is updated
-          if (!isInitialRealtimeLoad) {
-            const activeRole = currentAppRole || localStorage.getItem("pm_logged_role") || "";
-            if (activeRole.startsWith("admin")) {
-              if (!knownReportTimestamps.has(key)) {
-                // New Report
-                sendNativeNotification(
-                  "🍗 Laporan Kasir Baru Masuk!",
-                  `Kasir ${report.kasir || "Shift"} mengirim laporan baru (${report.tanggal || "Hari ini"}) • Saldo Bersih: Rp ${formatNumber(report.saldoAkhir || 0)}`,
-                  "admin-report-received",
-                  "report-in",
-                  key,
-                );
-              } else if (knownReportTimestamps.get(key) !== report.timestamp) {
-                // Report Updated / Edited
-                sendNativeNotification(
-                  "✏️ Laporan Kasir Diperbarui!",
-                  `Kasir ${report.kasir || "Shift"} memperbarui laporan (${report.tanggal || "Hari ini"}) • Saldo Bersih: Rp ${formatNumber(report.saldoAkhir || 0)}`,
-                  "admin-report-updated",
-                  "report-in",
-                  key,
-                );
-              }
-            }
-          }
         });
       }
+
+      currentList.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
+      const activeRole = currentAppRole || localStorage.getItem("pm_logged_role") || "";
+      const isOwner = activeRole.startsWith("admin");
+
+      currentList.forEach((report) => {
+        const key = report.id;
+        if (!isInitialRealtimeLoad) {
+          // Trigger live notification when a new report arrives or is updated
+          if (!knownReportTimestamps.has(key)) {
+            // New Report
+            const notifTitle = isOwner ? "🍗 Laporan Kasir Baru Masuk!" : "🍗 Laporan Penjualan Baru!";
+            sendNativeNotification(
+              notifTitle,
+              `Kasir ${report.kasir || "Shift"} mengirim laporan baru (${report.tanggal || "Hari ini"}) • Saldo: Rp ${formatNumber(report.saldoAkhir || report.penjualan || 0)}`,
+              "report-received",
+              "report-in",
+              key,
+            );
+          } else if (knownReportTimestamps.get(key) !== report.timestamp) {
+            // Report Updated / Edited
+            sendNativeNotification(
+              "✏️ Laporan Diperbarui!",
+              `Kasir ${report.kasir || "Shift"} memperbarui laporan (${report.tanggal || "Hari ini"}) • Saldo: Rp ${formatNumber(report.saldoAkhir || report.penjualan || 0)}`,
+              "report-updated",
+              "report-in",
+              key,
+            );
+          }
+        }
+      });
 
       allReportsGlobal = currentList;
       knownReportTimestamps = new Map(allReportsGlobal.map((r) => [r.id, r.timestamp]));
       isInitialRealtimeLoad = false;
       firebaseDataLoaded = true;
+
+      syncMissingReportNotifications();
 
       console.log(
         "✅ Data realtime tersinkronisasi",
@@ -1252,6 +1366,7 @@ const switchView = (role) => {
     initCustomSelects();
   }
 
+  syncMissingReportNotifications();
   updateNotificationBadges();
   window.scrollTo(0, 0);
 };
